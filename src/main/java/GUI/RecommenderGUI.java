@@ -1,22 +1,23 @@
 package GUI;
 
-import javax.swing.JFrame;
-import java.awt.GridLayout;
 import java.awt.BorderLayout;
-import javax.swing.JPanel;
-import javax.swing.JRadioButtonMenuItem;
-import javax.swing.JRadioButton;
-import javax.swing.JButton;
-import javax.swing.AbstractAction;
 import java.awt.event.ActionEvent;
+
+import javax.swing.AbstractAction;
 import javax.swing.Action;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.border.TitledBorder;
 
 import recommendation.Mediator;
-import javax.swing.JTextField;
 
-public class RecommenderGUI extends JFrame {
+public class RecommenderGUI extends JFrame implements MassageListener {
 	private static RecommenderGUI gui = null;
 
 	Mediator m = null;
@@ -24,6 +25,13 @@ public class RecommenderGUI extends JFrame {
 	private JRadioButton rdbtnDbpedia = null;
 	private JTextArea textArea = null;
 	private JTextField useridtextField = null;
+	private JRadioButton rdbtnUnweighted = null;
+	private JRadioButton rdbtnWeighted = null;
+	private JRadioButton rdbtnMyCosine = null;
+	private JRadioButton rdbtnCosineSimilartiy = null;
+	private JRadioButton rdbtnPearsonCor = null;
+	private JRadioButton rdbtnLoglikelihood = null;
+	private JTextArea textArea_1 = null;
 
 	/**
 	 * 
@@ -32,12 +40,12 @@ public class RecommenderGUI extends JFrame {
 	private final Action initializeDataSource = new SwingAction();
 	private final Action action_1 = new SwingAction_1();
 	private final Action action = new SwingAction_2();
-	
+
 	private final Action action_2 = new SwingAction_3();
 
 	public RecommenderGUI() {
 		super("Recommender System Framework");
-		setSize(1000, 600);
+		setSize(1100, 600);
 		setLocation(50, 50);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		getContentPane().setLayout(new BorderLayout(0, 0));
@@ -58,6 +66,7 @@ public class RecommenderGUI extends JFrame {
 		rdbtnFreebase.setAction(action);
 
 		rdbtnDbpedia = new JRadioButton("dbPedia");
+		rdbtnDbpedia.setSelected(true);
 		panel_1.add(rdbtnDbpedia);
 		rdbtnDbpedia.setAction(action_1);
 
@@ -65,19 +74,123 @@ public class RecommenderGUI extends JFrame {
 		panel_1.add(btnInitializeData);
 		btnInitializeData.setAction(initializeDataSource);
 
+		JPanel panel_3 = new JPanel();
+		panel_3.setBorder(new TitledBorder(null, "Item Features",
+				TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		panel.add(panel_3);
+
+		rdbtnUnweighted = new JRadioButton("Unweighted");
+		rdbtnUnweighted.setSelected(true);
+		rdbtnUnweighted.setAction(new AbstractAction("Unweighted") {
+
+			public void actionPerformed(ActionEvent e) {
+				if (((JRadioButton) e.getSource()).isSelected()) {
+					rdbtnWeighted.setSelected(false);
+				}
+
+			}
+		});
+		panel_3.add(rdbtnUnweighted);
+
+		rdbtnWeighted = new JRadioButton("Weighted");
+		rdbtnWeighted.setAction(new AbstractAction("Weighted") {
+
+			public void actionPerformed(ActionEvent e) {
+				if (((JRadioButton) e.getSource()).isSelected()) {
+					rdbtnUnweighted.setSelected(false);
+				}
+
+			}
+		});
+		panel_3.add(rdbtnWeighted);
+
+		JPanel panel_4 = new JPanel();
+		panel_4.setBorder(new TitledBorder(null, "Similarity Method",
+				TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		panel.add(panel_4);
+
+		rdbtnMyCosine = new JRadioButton("Mein Cosine Similartiy");
+		rdbtnMyCosine.setAction(new AbstractAction("Mein Cosine Similartiy") {
+
+			public void actionPerformed(ActionEvent e) {
+				if (((JRadioButton) e.getSource()).isSelected()) {
+					rdbtnPearsonCor.setSelected(false);
+					rdbtnLoglikelihood.setSelected(false);
+					rdbtnCosineSimilartiy.setSelected(false);
+				}
+
+			}
+		});
+		panel_4.add(rdbtnMyCosine);
+
+		rdbtnCosineSimilartiy = new JRadioButton("Cosine Similartiy");
+		rdbtnCosineSimilartiy
+				.setAction(new AbstractAction("Cosine Similartiy") {
+
+					public void actionPerformed(ActionEvent e) {
+						if (((JRadioButton) e.getSource()).isSelected()) {
+							rdbtnMyCosine.setSelected(false);
+							rdbtnPearsonCor.setSelected(false);
+							rdbtnLoglikelihood.setSelected(false);
+						}
+
+					}
+				});
+		panel_4.add(rdbtnCosineSimilartiy);
+
+		rdbtnPearsonCor = new JRadioButton("Pearson Cor");
+		rdbtnPearsonCor.setAction(new AbstractAction("Pearson Cor (mahout)") {
+
+			public void actionPerformed(ActionEvent e) {
+				if (((JRadioButton) e.getSource()).isSelected()) {
+					rdbtnMyCosine.setSelected(false);
+					rdbtnCosineSimilartiy.setSelected(false);
+					rdbtnLoglikelihood.setSelected(false);
+				}
+
+			}
+		});
+		panel_4.add(rdbtnPearsonCor);
+
+		rdbtnLoglikelihood = new JRadioButton("Loglikelihood");
+		rdbtnLoglikelihood.setAction(new AbstractAction("Loglikelihood") {
+
+			public void actionPerformed(ActionEvent e) {
+				if (((JRadioButton) e.getSource()).isSelected()) {
+					rdbtnMyCosine.setSelected(false);
+					rdbtnCosineSimilartiy.setSelected(false);
+					rdbtnPearsonCor.setSelected(false);
+				}
+
+			}
+		});
+		panel_4.add(rdbtnLoglikelihood);
+
 		textArea = new JTextArea();
 		getContentPane().add(textArea, BorderLayout.SOUTH);
-		
+
 		JPanel panel_2 = new JPanel();
 		getContentPane().add(panel_2, BorderLayout.WEST);
-		
-		useridtextField = new JTextField();
+
+		JLabel lblNewLabel = new JLabel("UserID");
+		panel_2.add(lblNewLabel);
+
+		useridtextField = new JTextField("325");
 		panel_2.add(useridtextField);
 		useridtextField.setColumns(10);
-		
+
 		JButton btnMakeRecommendaati = new JButton("Make Recommendaati");
 		btnMakeRecommendaati.setAction(action_2);
 		panel_2.add(btnMakeRecommendaati);
+		textArea_1 = new JTextArea();
+		//panel_5.add(textArea_1, BorderLayout.CENTER);
+		JScrollPane scrollingArea = new JScrollPane(textArea_1);
+		JPanel panel_5 = new JPanel();
+		panel_5.setLayout(new BorderLayout());
+		panel_5.add(scrollingArea, BorderLayout.CENTER);
+		getContentPane().add(panel_5, BorderLayout.CENTER);
+		
+
 		setVisible(true);
 	}
 
@@ -126,13 +239,50 @@ public class RecommenderGUI extends JFrame {
 		public void actionPerformed(ActionEvent e) {
 		}
 	}
+
 	private class SwingAction_3 extends AbstractAction {
 		public SwingAction_3() {
 			putValue(NAME, "Make Recommendation");
 			putValue(SHORT_DESCRIPTION, "Some short description");
 		}
+
 		public void actionPerformed(ActionEvent e) {
-			m.makeRecommendation(useridtextField.getText());
+			// m.makeRecommendation3(useridtextField.getText());
+			try {
+				int x = Integer.parseInt(useridtextField.getText());
+				int weighted = getWeightedMethod();
+				int matching = getMatchingMethod();
+				m.makeRecommendation(weighted, 2, matching, useridtextField.getText());
+			} catch (NumberFormatException nFE) {
+				pushStatusMessage("Input not a valid Integer");
+			}
 		}
+	}
+
+
+	public int getWeightedMethod() {
+		if (this.rdbtnWeighted.isSelected()){
+			return Mediator.WEIGHTED;
+		} else if (this.rdbtnUnweighted.isSelected())
+			return Mediator.UNWEIGHTED;
+		else return -1;
+	}
+	
+	public int getMatchingMethod() {
+		if (this.rdbtnCosineSimilartiy.isSelected()){
+			return Mediator.COSINE_SIM;
+		} else if (this.rdbtnLoglikelihood.isSelected()){
+			return Mediator.LOGLIKELIHOOD_SIM;
+		} else if (this.rdbtnMyCosine.isSelected()){
+			return Mediator.MYCOSINE_SIM;
+		} else if (this.rdbtnPearsonCor.isSelected()){
+			return Mediator.PEARSON_SIM;
+		} else
+			return -1;
+	}
+	
+	public void newMessage(String message) {
+		this.textArea_1.append(message);
+
 	}
 }

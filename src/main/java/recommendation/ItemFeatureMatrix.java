@@ -1,14 +1,11 @@
 package recommendation;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -16,38 +13,25 @@ import java.util.Set;
 import java.util.Vector;
 
 import org.ejml.data.DenseMatrix64F;
-import org.ejml.simple.SimpleMatrix;
+
+import com.hp.hpl.jena.sparql.sse.Item;
 
 import GUI.RecommenderGUI;
-
 import bean.Feature;
-import bean.Movie;
-import bean.Rating;
-
-import com.hp.hpl.jena.query.Query;
-import com.hp.hpl.jena.query.QueryExecution;
-import com.hp.hpl.jena.query.QueryExecutionFactory;
-import com.hp.hpl.jena.query.QueryFactory;
-import com.hp.hpl.jena.query.QuerySolution;
-import com.hp.hpl.jena.query.ResultSet;
-import com.hp.hpl.jena.sparql.sse.Item;
 
 public class ItemFeatureMatrix {
 
 	private RecommenderGUI gui = null;
 
 	public static final String DBPEDIA_UNWEIGHTED = "1";
+	public static final String DBPEDIA_WEIGHTED = "3";
 	public static final String FREEBASE_UNWEIGHTED = "2";
 
 	public static String ids2freebaseFile = "files/ids2freebase.dat"; // files
-																		// freebaseids
+																	// freebaseids
 	public static String ids2dbpediaFile = "files/ids2dbpedia.dat"; // files
 																	// dbpedia
 																	// ids
-
-	// file moviePredicates, movieURI predicate object
-	public static String movieFreebasePredicatesFile = "files/moviePredicates.dat";
-	public static String movieDBPediaPredicatesFile = "files/moviePredicatesDBPedia.dat";
 
 	// Predicate Hasmaps
 	// matrix id -> <pred>:<ob>
@@ -59,6 +43,7 @@ public class ItemFeatureMatrix {
 	// count accurence of predicates, useful to see which one to eliminate
 	private HashMap<String, Integer> hm_predicates_count = null;
 
+	
 	private EndpointConnector endpointConnector;
 
 	private List<String> filterlist = new ArrayList<String>();
@@ -107,20 +92,22 @@ public class ItemFeatureMatrix {
 		this.initializeMovieHashmap(source);
 		this.removeUnderTreshold();
 		this.initializeFilter(source);
-		this.initializePredicateHashMap(source);
 	}
+
+
+	
 
 	private void initializeFilter(String source) {
 		if (source.equals(ItemFeatureMatrix.DBPEDIA_UNWEIGHTED)) {
-				filterlist.add("<http://dbpedia.org/property/starring>");
-				filterlist.add("<http://dbpedia.org/property/producer>");
-				filterlist.add("<http://dbpedia.org/property/writer>");
-				filterlist.add("<http://dbpedia.org/property/director>");
-				filterlist.add("<http://dbpedia.org/ontology/musicComposer>");
-				filterlist.add("<http://dbpedia.org/ontology/distributor>");
-				filterlist.add("<http://dbpedia.org/property/screenplay>");
-				filterlist.add("<http://dbpedia.org/property/story>");
-			
+			filterlist.add("<http://dbpedia.org/property/starring>");
+			filterlist.add("<http://dbpedia.org/property/producer>");
+			filterlist.add("<http://dbpedia.org/property/writer>");
+			filterlist.add("<http://dbpedia.org/property/director>");
+			filterlist.add("<http://dbpedia.org/ontology/musicComposer>");
+			filterlist.add("<http://dbpedia.org/ontology/distributor>");
+			filterlist.add("<http://dbpedia.org/property/screenplay>");
+			filterlist.add("<http://dbpedia.org/property/story>");
+
 		}
 	}
 
@@ -132,7 +119,8 @@ public class ItemFeatureMatrix {
 	 *            data source (dbpedia or freebase)
 	 */
 	private void initializeMovieHashmap(String source) {
-		this.gui.pushStatusMessage("initializing Movie Hash ID");
+		if (this.gui != null)
+			this.gui.pushStatusMessage("initializing Movie Hash ID");
 		try {
 			this.idtoURIHashMap = new HashMap<Long, String>();
 
@@ -162,65 +150,11 @@ public class ItemFeatureMatrix {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		this.gui.pushStatusMessage("Finished initializing Movie Hash ID");
+		if (this.gui != null)
+			this.gui.pushStatusMessage("Finished initializing Movie Hash ID");
 	}
 
-	/**
-	 * initializePredicateHashMap initializes double Hashtable id for matrix ->
-	 * pred:ob and vice versa
-	 * 
-	 * @param source
-	 *            data source
-	 */
-	private void initializePredicateHashMap(String source) {
-		this.gui.pushStatusMessage("Initializing predicates of movies");
-		BufferedReader reader = null;
-		try {
 
-			if (source.equals(ItemFeatureMatrix.FREEBASE_UNWEIGHTED))
-				reader = new BufferedReader(new FileReader(new File(
-						ItemFeatureMatrix.movieFreebasePredicatesFile)));
-			else if (source.equals(ItemFeatureMatrix.DBPEDIA_UNWEIGHTED))
-				reader = new BufferedReader(new FileReader(new File(
-						ItemFeatureMatrix.movieDBPediaPredicatesFile)));
-
-			if (reader != null) {
-				String line = reader.readLine();
-
-				// index for hashmap and then matrix
-				int i = 1;
-
-				while (line != null) {
-
-					String[] parts = line.split("\t");
-					// <sub> <pred> <ob>
-					if (parts.length == 3) {
-						// cut the dot at the end
-						String feature = parts[1] + ":"
-								+ parts[2].substring(0, parts[2].length() - 1);
-
-						// check if movie not filtered out, under treshhold
-						if (!hm_predicate_uri_to_int.containsKey(feature)
-								&& this.idtoURIHashMap.containsValue(parts[0])
-								&& filterlist.contains(parts[1])) {
-							// make entry
-							hm_predicate_uri_to_int.put(feature, i);
-							hm_predicate_int_to_uri.put(i, feature);
-							i++;
-
-						}
-
-					}
-					line = reader.readLine();
-				}
-			}
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		this.gui.pushStatusMessage("Finished initializing predicates + " + this.getCountDistinctPredicates());
-	}
 
 	/*
 	 * public void initializeFromRepository() { this.initialize(); HashMap<Long,
@@ -248,16 +182,18 @@ public class ItemFeatureMatrix {
 	 */
 
 	private void removeUnderTreshold() {
-		this.gui.pushStatusMessage("Removie Movies under treshold");
+		if (this.gui != null)
+			this.gui.pushStatusMessage("Removie Movies under treshold");
 		RemoveUsersThreshold rem = new RemoveUsersThreshold();
 		Vector<Integer> remV = rem.getMoviesRatedUnderMinTreshold();
-		this.gui.pushStatusMessage("Removing " + remV.size() + " movies");
+		if (this.gui != null)
+			this.gui.pushStatusMessage("Removing " + remV.size() + " movies");
 		for (int i = 0; i < remV.size(); i++) {
 			this.idtoURIHashMap.remove(remV.get(i));
 		}
 	}
 
-		public int getCountMovieItems() {
+	public int getCountMovieItems() {
 		return this.idtoURIHashMap != null ? this.idtoURIHashMap.size() : -1;
 	}
 
@@ -266,52 +202,11 @@ public class ItemFeatureMatrix {
 				: -1;
 	}
 
-	
-
-	public Vector<Feature> getFeaturesOfMovie(int parseInt) {
-		String uri = this.idtoURIHashMap.get(new Long(parseInt));
-		BufferedReader reader;
-		Vector<Feature> featureVec = new Vector<Feature>();
-
-		try {
-
-			reader = new BufferedReader(new FileReader(new File(
-					movieDBPediaPredicatesFile)));
-
-			String line = reader.readLine();
-
-			while (line != null) {
-				String[] parts = line.split("\t");
-				if (parts.length == 3 && parts[0].equals(uri) && filterlist.contains(parts[1])) {
-					Feature f = new Feature();
-					f.setPredicate(parts[1]);
-					f.setObject(parts[2].substring(0, parts[2].length() - 1));
-					featureVec.add(f);
-				}
-				line = reader.readLine();
-			}
-
-			return featureVec;
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null;
-	}
 
 	public int getMatrixIndexOf(String feature) {
 		return this.hm_predicate_uri_to_int.get(feature);
 	}
 
-	public DenseMatrix64F getVectorOfMovieID(int movie_lensID) {
-		DenseMatrix64F userProfileMatrx = new DenseMatrix64F(1, this.getCountDistinctPredicates());
-		Vector<Feature> feature = this.getFeaturesOfMovie(movie_lensID);
-		for (int i = 0; i < feature.size(); i++) {
-			Feature f = feature.get(i);
-			userProfileMatrx.set(0, this.getMatrixIndexOf(f.getPredicate() + ":" + f.getObject()), 1);
-		}
-		return userProfileMatrx;
-	}
+
 
 }
