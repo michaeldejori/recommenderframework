@@ -39,8 +39,11 @@ public class WeightedItemFeature extends ItemFeature {
 	/**
 	 * initializes local Hashmap movieURI -> FeatureSore (feature , score) from
 	 * the file
+	 * 
+	 * @param predFilter, if null all predicates are taken, otherwise only the triples with
+	 * the predicates that are in the predicateFilter are taken
 	 */
-	public void initializeFeatureScoresHasmap() {
+	public void initializeFeatureScoresHasmap(Vector<String> predFilter) {
 		this.hm_featureScore = new HashMap<String, Vector<FeatureScore>>();
 		BufferedReader reader = null;
 		try {
@@ -51,22 +54,26 @@ public class WeightedItemFeature extends ItemFeature {
 				while (line != null) {
 					String[] parts = line.split("\t");
 					if (parts.length == 4) {
-						// score movie pred obj
-						double score = Double.parseDouble(parts[0]);
-						String movieURI = parts[1];
-						String pred = parts[2];
-						String obj = parts[3];
-						FeatureScore f = new FeatureScore();
-						f.setFeature(pred + "::" + obj);
-						f.setScore(score);
-						if (!this.hm_featureScore.containsKey(movieURI)) {
-							this.hm_featureScore
-									.put(movieURI,
-											new Vector<WeightedItemFeature.FeatureScore>());
+						if (predFilter == null || predFilter.contains(parts[2])) {
+							// score movie pred obj
+							double score = Double.parseDouble(parts[0]);
+							String movieURI = parts[1];
+							String pred = parts[2];
+							String obj = parts[3];
+							FeatureScore f = new FeatureScore();
+							f.setFeature(pred + "::" + obj);
+							f.setScore(score);
+							if (!this.hm_featureScore.containsKey(movieURI)) {
+								this.hm_featureScore
+										.put(movieURI,
+												new Vector<WeightedItemFeature.FeatureScore>());
+							}
+							Vector<WeightedItemFeature.FeatureScore> v = this.hm_featureScore
+									.get(movieURI);
+							v.add(f);
 						}
-						Vector<WeightedItemFeature.FeatureScore> v = this.hm_featureScore
-								.get(movieURI);
-						v.add(f);
+						else
+							System.out.println("filter out: " + parts[2]);
 					}
 					line = reader.readLine();
 				}
@@ -78,18 +85,20 @@ public class WeightedItemFeature extends ItemFeature {
 
 	/**
 	 * 
-	 * @param movieURI example http://dbpedia.org/resource/Cutthroat_Island
-	 * @return vector of feature scores of the movieURI 
+	 * @param movieURI
+	 *            example http://dbpedia.org/resource/Cutthroat_Island
+	 * @return vector of feature scores of the movieURI
 	 */
 	public Vector<FeatureScore> getFeatureScoresOfMovie(String movieURI) {
 		return this.hm_featureScore.get(movieURI);
 	}
-	
-	public Vector<String> getFeatureOfMovie(String movieURI){
+
+	public Vector<String> getFeatureOfMovie(String movieURI) {
 		System.out.println(movieURI);
-		Vector<FeatureScore> v =  hm_featureScore.get(movieURI);
-		// bei einigen hat das feature score creation nicht funktioniert, lasse die weg
-		if (v != null){
+		Vector<FeatureScore> v = hm_featureScore.get(movieURI);
+		// bei einigen hat das feature score creation nicht funktioniert, lasse
+		// die weg
+		if (v != null) {
 			Vector<String> vecString = new Vector<String>();
 			for (int i = 0; i < v.size(); i++) {
 				vecString.add(v.get(i).getFeature());
@@ -98,18 +107,19 @@ public class WeightedItemFeature extends ItemFeature {
 		}
 		return null;
 	}
-	
+
 	public double getScoreOf(String uri, String feature) {
 		Vector<FeatureScore> v = this.hm_featureScore.get(uri);
 		for (int i = 0; i < v.size(); i++) {
 			FeatureScore fs = v.get(i);
-			if(fs.getFeature().equals(feature)){
-				System.out.println("Weighted Item Feature " + feature + " are the same");
+			if (fs.getFeature().equals(feature)) {
+				System.out.println("Weighted Item Feature " + feature
+						+ " are the same");
 				return fs.getScore();
 			}
 		}
 		System.out.println("ACHUTUNG WeightedItemFeature no equal feature");
 		return 0;
 	}
-	
+
 }

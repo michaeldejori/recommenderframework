@@ -26,6 +26,7 @@ import recommendation.itemfeature.ItemFeature;
 import recommendation.itemfeature.UnweightedItemFeature;
 import recommendation.itemfeature.WeightedItemFeature;
 import GUI.RecommenderGUI;
+import GUI.TextFrame;
 import bean.Feature;
 import bean.Rating;
 import bean.User;
@@ -263,11 +264,11 @@ public class Mediator {
 			// Prepare Weighted Item Feature Set UP
 			iF = new WeightedItemFeature();
 			System.out.println("Initialize weighted Scores");
-			((WeightedItemFeature) iF).initializeFeatureScoresHasmap();
+			((WeightedItemFeature) iF).initializeFeatureScoresHasmap(gui.getSelectedPredicateFilterValues());
 			System.out.println("Finished initilize weighted Scores");
 		} else if (ifapproach == Mediator.UNWEIGHTED) {
 			iF = new UnweightedItemFeature();
-			((UnweightedItemFeature) iF).initializePredicateHashMap(ItemFeatureMatrix.DBPEDIA_UNWEIGHTED);
+			((UnweightedItemFeature) iF).initializePredicateHashMap(ItemFeatureMatrix.DBPEDIA_UNWEIGHTED, gui.getSelectedPredicateFilterValues());
 		}
 
 		if (ufapproach == 2) {
@@ -373,9 +374,11 @@ public class Mediator {
 
 	private void printUserProfile(HashMap<String, Double> userProfile) {
 		Set<String> set = userProfile.keySet();
+		TextFrame tf = new TextFrame("User Profile");
 		for (Iterator<String> it = set.iterator(); it.hasNext();) {
 			String feature = it.next();
 			System.out.println(feature + ": " + userProfile.get(feature));
+			tf.newMessage(feature + ": " + userProfile.get(feature) + "\n");
 		}
 
 	}

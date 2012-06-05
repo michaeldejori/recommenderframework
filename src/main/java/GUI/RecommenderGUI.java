@@ -1,7 +1,13 @@
 package GUI;
 
 import java.awt.BorderLayout;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Set;
+import java.util.Vector;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -16,6 +22,10 @@ import javax.swing.JTextField;
 import javax.swing.border.TitledBorder;
 
 import recommendation.Mediator;
+import recommendation.itemfeature.ItemFeature;
+import java.awt.FlowLayout;
+import java.awt.Component;
+import javax.swing.Box;
 
 public class RecommenderGUI extends JFrame implements MassageListener {
 	private static RecommenderGUI gui = null;
@@ -32,6 +42,7 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 	private JRadioButton rdbtnPearsonCor = null;
 	private JRadioButton rdbtnLoglikelihood = null;
 	private JTextArea textArea_1 = null;
+	private CheckBoxList cl = null;
 
 	/**
 	 * 
@@ -171,17 +182,24 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 
 		JPanel panel_2 = new JPanel();
 		getContentPane().add(panel_2, BorderLayout.WEST);
+		panel_2.setLayout(new GridLayout(2, 1));
+		
+		JPanel panel_6 = new JPanel();
+		panel_2.add(panel_6);
 
 		JLabel lblNewLabel = new JLabel("UserID");
-		panel_2.add(lblNewLabel);
+		panel_6.add(lblNewLabel);
+		
+		Component horizontalGlue = Box.createHorizontalGlue();
+		panel_6.add(horizontalGlue);
 
 		useridtextField = new JTextField("325");
-		panel_2.add(useridtextField);
+		panel_6.add(useridtextField);
 		useridtextField.setColumns(10);
 
 		JButton btnMakeRecommendaati = new JButton("Make Recommendaati");
+		panel_6.add(btnMakeRecommendaati);
 		btnMakeRecommendaati.setAction(action_2);
-		panel_2.add(btnMakeRecommendaati);
 		textArea_1 = new JTextArea();
 		//panel_5.add(textArea_1, BorderLayout.CENTER);
 		JScrollPane scrollingArea = new JScrollPane(textArea_1);
@@ -190,7 +208,18 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 		panel_5.add(scrollingArea, BorderLayout.CENTER);
 		getContentPane().add(panel_5, BorderLayout.CENTER);
 		
-
+		Vector<String> vecString = ItemFeature.getDistinctPredicates();
+		
+		LinkedHashMap<String, Boolean> lhm = new LinkedHashMap<String, Boolean>();
+		for (int i = 0; i < vecString.size(); i++){
+			lhm.put(vecString.get(i), true);
+		}
+		
+		JPanel panel_7 = new JPanel();
+		panel_2.add(panel_7);
+		cl = new CheckBoxList(lhm);
+		JScrollPane scrollList = new JScrollPane(cl);
+		panel_7.add(scrollList);
 		setVisible(true);
 	}
 
@@ -247,6 +276,7 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 		}
 
 		public void actionPerformed(ActionEvent e) {
+			getSelectedPredicateFilterValues();
 			// m.makeRecommendation3(useridtextField.getText());
 			try {
 				int x = Integer.parseInt(useridtextField.getText());
@@ -284,5 +314,18 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 	public void newMessage(String message) {
 		this.textArea_1.append(message);
 
+	}
+	
+	public Vector<String> getSelectedPredicateFilterValues(){
+		Vector<String> filter = new Vector<String>();
+		LinkedHashMap<String, Boolean> hm = this.cl.getItems();
+		Set<String> s = hm.keySet();
+		for (Iterator<String> it = s.iterator(); it.hasNext(); ) {
+			String str = it.next();
+			if(hm.get(str)){
+				filter.add(str);
+			}
+		}
+		return filter;
 	}
 }

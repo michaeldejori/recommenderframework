@@ -17,12 +17,14 @@ public class UnweightedItemFeature extends ItemFeature {
 	public static final String FREEBASE_UNWEIGHTED = "2";
 
 	private HashMap<String, Vector<String>> hm_movieURI_featurelist = null;
-	
-	public static String movieDBPediaPredicatesFile = "files/moviePredicatesDBPedia.dat";
-	// file moviePredicates, movieURI predicate object
-	public static String movieFreebasePredicatesFile = "files/moviePredicates.dat";
-	
-	public void initializePredicateHashMap(String source) {
+
+	/**
+	 * 
+	 * @param source
+	 * @param predFilter if null all predicates are taken, otherwise only the triples with
+	 * the predicates that are in the predicateFilter are taken
+	 */
+	public void initializePredicateHashMap(String source, Vector<String> predFilter) {
 		hm_movieURI_featurelist = new HashMap<String, Vector<String>>();
 		BufferedReader reader = null;
 		try {
@@ -62,15 +64,18 @@ public class UnweightedItemFeature extends ItemFeature {
 							}
 						}
 						
-						
-						// cut the dot at the end
-						String feature = newP + "::" + newO;
-
-						if (!hm_movieURI_featurelist.containsKey(newS)){
-							hm_movieURI_featurelist.put(newS, new Vector<String>());
-						}
-						Vector<String> v = hm_movieURI_featurelist.get(newS);
-						v.add(feature);
+						if (predFilter == null || predFilter.contains(newP)){
+							
+							// cut the dot at the end
+							String feature = newP + "::" + newO;
+	
+							if (!hm_movieURI_featurelist.containsKey(newS)){
+								hm_movieURI_featurelist.put(newS, new Vector<String>());
+							}
+							Vector<String> v = hm_movieURI_featurelist.get(newS);
+							v.add(feature);
+						} else
+							System.out.println("filter out: " + newP);
 					}
 					line = reader.readLine();
 				}
