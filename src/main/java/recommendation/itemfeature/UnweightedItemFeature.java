@@ -75,7 +75,7 @@ public class UnweightedItemFeature extends ItemFeature {
 							Vector<String> v = hm_movieURI_featurelist.get(newS);
 							v.add(feature);
 						} else
-							System.out.println("filter out: " + newP);
+							;//System.out.println("filter out: " + newP);
 					}
 					line = reader.readLine();
 				}

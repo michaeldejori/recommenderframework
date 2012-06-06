@@ -12,12 +12,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 
-import org.ejml.data.DenseMatrix64F;
-
-import com.hp.hpl.jena.sparql.sse.Item;
-
 import GUI.RecommenderGUI;
-import bean.Feature;
 
 public class ItemFeatureMatrix {
 
@@ -43,13 +38,9 @@ public class ItemFeatureMatrix {
 	// count accurence of predicates, useful to see which one to eliminate
 	private HashMap<String, Integer> hm_predicates_count = null;
 
-	
-	private EndpointConnector endpointConnector;
-
 	private List<String> filterlist = new ArrayList<String>();
 
 	public ItemFeatureMatrix(RecommenderGUI gui) {
-		this.endpointConnector = new EndpointConnector();
 		this.gui = gui;
 	}
 

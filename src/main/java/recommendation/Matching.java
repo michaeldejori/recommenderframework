@@ -1,33 +1,23 @@
 package recommendation;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Vector;
 
-import org.apache.lucene.search.Similarity;
-import org.apache.mahout.cf.taste.common.Refreshable;
+import org.apache.mahout.cf.taste.common.NoSuchUserException;
 import org.apache.mahout.cf.taste.common.TasteException;
-import org.apache.mahout.cf.taste.impl.common.FastIDSet;
-import org.apache.mahout.cf.taste.impl.common.LongPrimitiveIterator;
 import org.apache.mahout.cf.taste.impl.model.file.FileDataModel;
 import org.apache.mahout.cf.taste.impl.similarity.LogLikelihoodSimilarity;
 import org.apache.mahout.cf.taste.impl.similarity.PearsonCorrelationSimilarity;
 import org.apache.mahout.cf.taste.impl.similarity.UncenteredCosineSimilarity;
 import org.apache.mahout.cf.taste.model.DataModel;
-import org.apache.mahout.cf.taste.model.PreferenceArray;
 import org.apache.mahout.cf.taste.similarity.UserSimilarity;
-import org.apache.mahout.common.distance.CosineDistanceMeasure;
-import org.apache.mahout.math.hadoop.similarity.cooccurrence.measures.LoglikelihoodSimilarity;
-import org.ejml.data.DenseMatrix64F;
 
 import recommendation.itemfeature.ItemFeature;
 import GUI.RecommenderGUI;
-import bean.Movie;
 import bean.Rating;
 
 public class Matching {
@@ -163,5 +153,95 @@ public class Matching {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	
+	public static Vector<Integer> calculateMahoutUncenteredCosineSimReturn(
+			Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
+			HashMap<String, String> idtoURIHashMap, double scoreTreshhold) {
+		Vector<Integer> vecint = new Vector<Integer>();
+		DataModel model;
+		try {
+			File f = new File("temp/file.dat");
+			model = new FileDataModel(f);
+			UserSimilarity usersim = new UncenteredCosineSimilarity(model);
+			for (int i = 0; i < ratingsToEstimate.size(); i++) {
+				try {
+					double score = usersim.userSimilarity(new Long(
+							ratingsToEstimate.get(i).getMovie_lensID()), 9999999);
+					if (score > scoreTreshhold){
+						vecint.add(Integer.parseInt(ratingsToEstimate.get(i).getMovie_lensID()));
+					}
+				} catch (NoSuchUserException e){
+					
+				}
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (TasteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return vecint;
+	}
+
+	public static Vector<Integer> calculateMahoutPearsonCorSimReturn(
+			Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
+			HashMap<String, String> idtoURIHashMap, double scoreTreshhold) {
+		Vector<Integer> vecint = new Vector<Integer>();
+		DataModel model;
+		try {
+			File f = new File("temp/file.dat");
+			model = new FileDataModel(f);
+			UserSimilarity usersim = new PearsonCorrelationSimilarity(model);
+			for (int i = 0; i < ratingsToEstimate.size(); i++) {
+				try {
+					double score = usersim.userSimilarity(new Long(
+							ratingsToEstimate.get(i).getMovie_lensID()), 9999999);
+					if (score > scoreTreshhold){
+						vecint.add(Integer.parseInt(ratingsToEstimate.get(i).getMovie_lensID()));
+					}
+				} catch (NoSuchUserException e){
+					
+				}
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (TasteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return vecint;
+	}
+	
+	public static Vector<Integer> calculateMahoutLogLikelihoodSimReturn(
+			Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
+			HashMap<String, String> idtoURIHashMap, double scoreTreshhold) {
+		Vector<Integer> vecint = new Vector<Integer>();
+		DataModel model;
+		try {
+			File f = new File("temp/file.dat");
+			model = new FileDataModel(f);
+			UserSimilarity usersim = new LogLikelihoodSimilarity(model);
+			for (int i = 0; i < ratingsToEstimate.size(); i++) {
+				try {
+					double score = usersim.userSimilarity(new Long(
+							ratingsToEstimate.get(i).getMovie_lensID()), 9999999);
+					if (score > scoreTreshhold){
+						vecint.add(Integer.parseInt(ratingsToEstimate.get(i).getMovie_lensID()));
+					}
+				} catch (NoSuchUserException e){
+					
+				}
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (TasteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return vecint;
 	}
 }

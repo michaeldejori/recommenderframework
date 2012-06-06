@@ -8,10 +8,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.Vector;
 
 import org.apache.mahout.cf.taste.common.TasteException;
-import org.openrdf.repository.Repository;
 
 import com.freebase.api.Freebase;
 import com.freebase.json.JSON;

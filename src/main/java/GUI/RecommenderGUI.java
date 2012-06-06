@@ -1,9 +1,9 @@
 package GUI;
 
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Set;
@@ -11,6 +11,7 @@ import java.util.Vector;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
+import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -23,9 +24,6 @@ import javax.swing.border.TitledBorder;
 
 import recommendation.Mediator;
 import recommendation.itemfeature.ItemFeature;
-import java.awt.FlowLayout;
-import java.awt.Component;
-import javax.swing.Box;
 
 public class RecommenderGUI extends JFrame implements MassageListener {
 	private static RecommenderGUI gui = null;
@@ -51,8 +49,8 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 	private final Action initializeDataSource = new SwingAction();
 	private final Action action_1 = new SwingAction_1();
 	private final Action action = new SwingAction_2();
-
 	private final Action action_2 = new SwingAction_3();
+	private final Action precisionrecallAction = new SwingAction_4();
 
 	public RecommenderGUI() {
 		super("Recommender System Framework");
@@ -200,6 +198,11 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 		JButton btnMakeRecommendaati = new JButton("Make Recommendaati");
 		panel_6.add(btnMakeRecommendaati);
 		btnMakeRecommendaati.setAction(action_2);
+		
+		JButton btnNewButton = new JButton("New button");
+		btnNewButton.setAction(precisionrecallAction);
+		
+		panel_6.add(btnNewButton);
 		textArea_1 = new JTextArea();
 		//panel_5.add(textArea_1, BorderLayout.CENTER);
 		JScrollPane scrollingArea = new JScrollPane(textArea_1);
@@ -270,6 +273,9 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 	}
 
 	private class SwingAction_3 extends AbstractAction {
+
+		private static final long serialVersionUID = 1L;
+
 		public SwingAction_3() {
 			putValue(NAME, "Make Recommendation");
 			putValue(SHORT_DESCRIPTION, "Some short description");
@@ -279,7 +285,6 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 			getSelectedPredicateFilterValues();
 			// m.makeRecommendation3(useridtextField.getText());
 			try {
-				int x = Integer.parseInt(useridtextField.getText());
 				int weighted = getWeightedMethod();
 				int matching = getMatchingMethod();
 				m.makeRecommendation(weighted, 2, matching, useridtextField.getText());
@@ -287,6 +292,28 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 				pushStatusMessage("Input not a valid Integer");
 			}
 		}
+	}
+	
+	private class SwingAction_4 extends AbstractAction{
+		private static final long serialVersionUID = 1L;
+
+		public SwingAction_4(){
+			putValue(NAME, "Recall Precision");
+			putValue(SHORT_DESCRIPTION, "Some short description");
+		}
+		
+		public void actionPerformed(ActionEvent e) {
+			getSelectedPredicateFilterValues();
+			// m.makeRecommendation3(useridtextField.getText());
+			try {
+				int weighted = getWeightedMethod();
+				int matching = getMatchingMethod();
+				m.determineTreshhold(weighted, 2, matching);
+			} catch (NumberFormatException nFE) {
+				pushStatusMessage("Input not a valid Integer");
+			}
+		}
+		
 	}
 
 

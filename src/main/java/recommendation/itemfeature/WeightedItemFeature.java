@@ -73,7 +73,7 @@ public class WeightedItemFeature extends ItemFeature {
 							v.add(f);
 						}
 						else
-							System.out.println("filter out: " + parts[2]);
+							; //System.out.println("filter out: " + parts[2]);
 					}
 					line = reader.readLine();
 				}
@@ -94,7 +94,6 @@ public class WeightedItemFeature extends ItemFeature {
 	}
 
 	public Vector<String> getFeatureOfMovie(String movieURI) {
-		System.out.println(movieURI);
 		Vector<FeatureScore> v = hm_featureScore.get(movieURI);
 		// bei einigen hat das feature score creation nicht funktioniert, lasse
 		// die weg
@@ -113,12 +112,9 @@ public class WeightedItemFeature extends ItemFeature {
 		for (int i = 0; i < v.size(); i++) {
 			FeatureScore fs = v.get(i);
 			if (fs.getFeature().equals(feature)) {
-				System.out.println("Weighted Item Feature " + feature
-						+ " are the same");
 				return fs.getScore();
 			}
 		}
-		System.out.println("ACHUTUNG WeightedItemFeature no equal feature");
 		return 0;
 	}
 
