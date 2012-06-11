@@ -28,6 +28,9 @@ public class Mediator {
 	public static final int LOGLIKELIHOOD_SIM = 2;
 	public static final int PEARSON_SIM = 3;
 
+	public static final int PROF_CONS_APP_2 = 2;
+	public static final int PROF_CONS_APP_3 = 3;
+
 	public static final int WEIGHTED = 1;
 	public static final int UNWEIGHTED = 2;
 
@@ -215,10 +218,13 @@ public class Mediator {
 					gui.getSelectedPredicateFilterValues());
 		}
 
-		if (ufapproach == 2) {
+		if (ufapproach == Mediator.PROF_CONS_APP_3) {
 			userProfile = UserProfileContruction.approach3(backData, iF,
 					ifapproach, this.idtoURIHashMap);
 			printUserProfile(userProfile);
+		} else if (ufapproach == Mediator.PROF_CONS_APP_2) {
+			userProfile = UserProfileContruction.approach2(backData, iF,
+					ifapproach, this.idtoURIHashMap);
 		}
 		if (matchApproach == Mediator.MYCOSINE_SIM) {
 			Matching.CosineSimilarity(userProfile, idtoURIHashMap,
@@ -377,7 +383,7 @@ public class Mediator {
 					}
 				}
 				System.out.println("Rating Treshhold: " + ratingTreshold);
-				System.out.println("Score Treshhold: " + startTres );
+				System.out.println("Score Treshhold: " + startTres);
 				System.out.println("Total Precision: " + avgprecision / count);
 				System.out.println("Total Recall: " + avgrecall / count);
 				System.out.println("#########################################");
@@ -405,8 +411,11 @@ public class Mediator {
 		user.setRatings(ratingsOfUser);
 		Vector<Rating> backData = user.getBackGroundData(0.85);
 		HashMap<String, Double> userProfile = null;
-		if (ufapproach == 2) {
+		if (ufapproach == Mediator.PROF_CONS_APP_3) {
 			userProfile = UserProfileContruction.approach3(backData, iF,
+					ifapproach, this.idtoURIHashMap);
+		} else if (ufapproach == Mediator.PROF_CONS_APP_2) {
+			userProfile = UserProfileContruction.approach2(backData, iF,
 					ifapproach, this.idtoURIHashMap);
 		}
 
@@ -417,11 +426,13 @@ public class Mediator {
 		} else if (matchApproach == Mediator.COSINE_SIM) {
 			prepareFile(user.getRatingsToEstimate(), userProfile, iF);
 			estimatedIDVec = Matching.calculateMahoutUncenteredCosineSimReturn(
-					user.getRatingsToEstimate(), gui, this.idtoURIHashMap, startTres);
+					user.getRatingsToEstimate(), gui, this.idtoURIHashMap,
+					startTres);
 		} else if (matchApproach == Mediator.PEARSON_SIM) {
 			prepareFile(user.getRatingsToEstimate(), userProfile, iF);
-			estimatedIDVec = Matching.calculateMahoutPearsonCorSimReturn(user.getRatingsToEstimate(),
-					gui, this.idtoURIHashMap, startTres);
+			estimatedIDVec = Matching.calculateMahoutPearsonCorSimReturn(
+					user.getRatingsToEstimate(), gui, this.idtoURIHashMap,
+					startTres);
 		} else if (matchApproach == Mediator.LOGLIKELIHOOD_SIM) {
 			prepareFile(user.getRatingsToEstimate(), userProfile, iF);
 			estimatedIDVec = Matching.calculateMahoutLogLikelihoodSimReturn(

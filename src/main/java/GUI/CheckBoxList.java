@@ -5,6 +5,8 @@ import java.awt.event.*;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
+import java.util.Vector;
+
 import javax.swing.*;
 import javax.swing.border.*;
  
@@ -106,6 +108,10 @@ public class CheckBoxList<T> extends JList {
     public LinkedHashMap<T, Boolean> getItems() {
         return model.getItems();
     }
+    
+    public void selectinVector(Vector<String> vec){
+    	model.selectInVector(vec);
+    }
  
     /**
      * Maintains a sorted list of ListItems for rendering a CheckBoxList
@@ -153,6 +159,15 @@ public class CheckBoxList<T> extends JList {
                 map.put(item.dataItem, item.selected);
             }
             return map;
+        }
+        
+        public void selectInVector(Vector<String> vec){
+            for(ListItem<T> item : items) {
+                if (vec.contains(item.dataItem)){
+                	item.selected = true;
+                } else
+                	item.selected = false;
+            }
         }
  
         /**
