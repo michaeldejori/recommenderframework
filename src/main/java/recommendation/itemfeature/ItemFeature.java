@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.Vector;
 
 import recommendation.ItemFeatureMatrix;
@@ -27,6 +28,10 @@ public class ItemFeature {
 		return null;
 	}
 
+	public int getCommonPredicates(String movieURI1, Set<String> set){
+		return 0;
+	}
+	
 	public static Vector<String> getDistinctPredicates(){
 		Vector<String> vec = new Vector<String>();
 		BufferedReader reader = null;

@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.Vector;
 
 import recommendation.ItemFeatureMatrix;
@@ -117,5 +119,24 @@ public class WeightedItemFeature extends ItemFeature {
 		}
 		return 0;
 	}
+	
+
+	public int getCommonPredicates(String movieURI1, Set<String> set){
+		int ret = 0;
+		Vector<FeatureScore> movieFeatures1 = hm_featureScore.get(movieURI1);
+		if (movieFeatures1 != null){
+			for (Iterator<String> it = set.iterator(); it.hasNext();) {
+				String feature = it.next();
+				for (int j = 0; j < movieFeatures1.size(); j++) {
+					FeatureScore f = movieFeatures1.get(j);
+					if (feature.equals(f.getFeature())){
+						ret ++;
+					}
+				}
+			}
+			return ret;
+		} else return 0;
+	}
+
 
 }

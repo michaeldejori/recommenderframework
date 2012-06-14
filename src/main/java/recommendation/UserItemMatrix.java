@@ -26,13 +26,15 @@ public class UserItemMatrix {
 
 	private final String ratedMoviesFile="files/user_ratedmovies-timestamps.dat";
 	
-	private HashMap<Integer, Vector<Rating>> hm_user_ratings = new HashMap<Integer, Vector<Rating>>();
+	
+	private HashMap<Integer, Vector<Rating>> hm_user_ratings = null;
 	
 
 	/**
 	 * initializes the the file user ratings in the Hashmap
 	 */
 	public void initalizeDataFromFile(){
+		hm_user_ratings =  new HashMap<Integer, Vector<Rating>>();
 		BufferedReader reader;
 		try {
 			reader = new BufferedReader(new FileReader(new File(this.ratedMoviesFile)));
@@ -43,6 +45,41 @@ public class UserItemMatrix {
 				// 75 296 5 1162160689000
 				String[] parts = line.split("\t");
 				if (parts.length == 4) {
+					String userID = parts[0];
+					String movieID = parts[1];
+					String rating = parts[2];
+					String timestamp = parts[3];
+					Rating r = new Rating();
+					r.setMovie_lensID(movieID);
+					r.setTimestamp(Long.parseLong(timestamp));
+					r.setRating(Double.parseDouble(rating));
+					if (this.hm_user_ratings.get(new Integer(Integer.parseInt(userID))) == null){
+						this.hm_user_ratings.put(new Integer(Integer.parseInt(userID)), new Vector<Rating>());
+					}
+					Vector<Rating> ratings = this.hm_user_ratings.get(new Integer(Integer.parseInt(userID)));
+					ratings.add(r);
+				}
+				line = reader.readLine();
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void initializeMyTestData(){
+		hm_user_ratings = new HashMap<Integer, Vector<Rating>>();
+		BufferedReader reader;
+		try {
+			reader = new BufferedReader(new FileReader(new File("testfiles/user_test_ratings.dat")));
+
+			String line = reader.readLine();
+
+			while (line != null) {
+				// 75 296 5 1162160689000
+				String[] parts = line.split("\t");
+				if (parts.length >= 4) {
 					String userID = parts[0];
 					String movieID = parts[1];
 					String rating = parts[2];
@@ -109,7 +146,5 @@ public class UserItemMatrix {
 	public Set<Integer> getUsersWithRatingsInFile(){
 		return hm_user_ratings.keySet();
 	}
-
-	
 	
 }

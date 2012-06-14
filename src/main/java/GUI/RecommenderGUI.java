@@ -59,6 +59,7 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 	private final Action action = new SwingAction_2();
 	private final Action action_2 = new SwingAction_3();
 	private final Action precisionrecallAction = new SwingAction_4();
+	private final Action top5ListAction = new Top5Action();
 	private final Action selectImportantAction = new SwingAction_SelImportFeatures();
 
 	public RecommenderGUI() {
@@ -222,8 +223,12 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 
 		JButton btnNewButton = new JButton("New button");
 		btnNewButton.setAction(precisionrecallAction);
-
 		panel_6.add(btnNewButton);
+
+		JButton top5button = new JButton("New button");
+		top5button.setAction(top5ListAction);
+		panel_6.add(top5button);
+
 		textArea_1 = new JTextArea();
 		// panel_5.add(textArea_1, BorderLayout.CENTER);
 		JScrollPane scrollingArea = new JScrollPane(textArea_1);
@@ -309,15 +314,16 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 		public void actionPerformed(ActionEvent e) {
 			getSelectedPredicateFilterValues();
 			// m.makeRecommendation3(useridtextField.getText());
-			try {
-				int weighted = getWeightedMethod();
-				int matching = getMatchingMethod();
-				int prof_construction_method = getProfileConstructionMethod();
-				m.makeRecommendation(weighted, prof_construction_method,
-						matching, useridtextField.getText());
-			} catch (NumberFormatException nFE) {
-				pushStatusMessage("Input not a valid Integer");
-			}
+			int weighted = getWeightedMethod();
+			int matching = getMatchingMethod();
+			int prof_construction_method = getProfileConstructionMethod();
+			/*
+			 * m.makeRecommendation(weighted, prof_construction_method,
+			 * matching, useridtextField.getText());
+			 */
+			m.makesmallTestRecommendation(weighted, prof_construction_method,
+					matching, useridtextField.getText());
+
 		}
 	}
 
@@ -338,6 +344,31 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 				int profcon = getProfileConstructionMethod();
 				m.determineTreshhold(weighted, profcon, matching);
 			} catch (NumberFormatException nFE) {
+				System.out.println(nFE.getStackTrace());
+				pushStatusMessage("Input not a valid Integer");
+			}
+		}
+
+	}
+
+	private class Top5Action extends AbstractAction {
+		private static final long serialVersionUID = 1L;
+
+		public Top5Action() {
+			putValue(NAME, "Top 5");
+			putValue(SHORT_DESCRIPTION, "Some short description");
+		}
+
+		public void actionPerformed(ActionEvent e) {
+			getSelectedPredicateFilterValues();
+			// m.makeRecommendation3(useridtextField.getText());
+			try {
+				int weighted = getWeightedMethod();
+				int matching = getMatchingMethod();
+				int profcon = getProfileConstructionMethod();
+				m.top5list(weighted, profcon, matching);
+			} catch (NumberFormatException nFE) {
+				System.out.println(nFE.getStackTrace());
 				pushStatusMessage("Input not a valid Integer");
 			}
 		}
@@ -379,7 +410,7 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 			filter.add("http://dbpedia.org/property/country");
 			filter.add("http://purl.org/dc/terms/subject");
 			filter.add("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
-			
+
 			cl.selectinVector(filter);
 		}
 	}

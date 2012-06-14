@@ -109,4 +109,18 @@ public class UnweightedItemFeature extends ItemFeature {
 	public Vector<String> getFeatureOfMovie(String movieURI){
 		return hm_movieURI_featurelist.get(movieURI);
 	}
+	
+
+	public int getCommonPredicates(String movieURI1, String movieURI2){
+		int ret = 0;
+		Vector<String> movieFeatures1 = hm_movieURI_featurelist.get(movieURI1);
+		Vector<String> movieFeatures2 = hm_movieURI_featurelist.get(movieURI2);
+		for (int i = 0; i < movieFeatures1.size(); i++) {
+			String feature = movieFeatures1.get(i);
+			if (movieFeatures2.contains(feature)){
+				ret ++;
+			}
+		}
+		return ret;
+	}
 }

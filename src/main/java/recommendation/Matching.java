@@ -26,8 +26,6 @@ public class Matching {
 			HashMap<String, String> idtoURIHashMap, Vector<Rating> ratings,
 			ItemFeature iF, RecommenderGUI gui) {
 
-		System.out.println("sfasefwerertergfdgdfg");
-		
 		for (int i = 0; i < ratings.size(); i++) {
 			// compute dot Product
 			double sumDotProduct = 0;
@@ -61,7 +59,7 @@ public class Matching {
 				}
 				score = sumDotProduct / (Math.sqrt(sc) * Math.sqrt(sb));
 			}
-			
+
 			System.out.println("asdasdsadasdsadasdasdasdasd");
 			String toDisplay = idtoURIHashMap.get(ratings.get(i)
 					.getMovie_lensID());
@@ -109,9 +107,14 @@ public class Matching {
 			UserSimilarity usersim = new PearsonCorrelationSimilarity(model);
 			gui.newMessage("\n\nMahout Pearson Correlation Similarity:\n");
 			for (int i = 0; i < ratingsToEstimate.size(); i++) {
+				System.out.println("Ich bin hier");
 				double score = usersim.userSimilarity(new Long(
 						ratingsToEstimate.get(i).getMovie_lensID()), 9999999);
-				String toDisplay = idtoURIHashMap.get(ratingsToEstimate.get(i)
+				System.out.println(score);
+				score = (score + 1) / 2;
+				System.out.println(score);
+				String toDisplay = "";
+				toDisplay += idtoURIHashMap.get(ratingsToEstimate.get(i)
 						.getMovie_lensID());
 				toDisplay += "(" + ratingsToEstimate.get(i).getMovie_lensID()
 						+ ") Score: " + score + " (Rating "
@@ -154,10 +157,11 @@ public class Matching {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static Vector<Integer> calculateMahoutUncenteredCosineSimReturn(
 			Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
-			HashMap<String, String> idtoURIHashMap, double scoreTreshhold) {
+			HashMap<String, String> idtoURIHashMap, double scoreTreshhold,
+			ItemFeature iF, HashMap<String, Double> userProfile) {
 		Vector<Integer> vecint = new Vector<Integer>();
 		DataModel model;
 		try {
@@ -165,14 +169,66 @@ public class Matching {
 			model = new FileDataModel(f);
 			UserSimilarity usersim = new UncenteredCosineSimilarity(model);
 			for (int i = 0; i < ratingsToEstimate.size(); i++) {
-				try {
-					double score = usersim.userSimilarity(new Long(
-							ratingsToEstimate.get(i).getMovie_lensID()), 9999999);
-					if (score > scoreTreshhold){
-						vecint.add(Integer.parseInt(ratingsToEstimate.get(i).getMovie_lensID()));
+				if (Mediator.USE_MIN_PREDICATES) {
+					// check if enough common Predicates
+					String movie1URI = idtoURIHashMap.get(ratingsToEstimate
+							.get(i).getMovie_lensID());
+					int comPredicates = iF.getCommonPredicates(movie1URI,
+							userProfile.keySet());
+					if (comPredicates >= Mediator.MIN_COMM_PREDICATES) {
+						try {
+							double score = usersim.userSimilarity(
+									new Long(ratingsToEstimate.get(i)
+											.getMovie_lensID()), 9999999);
+							
+							
+							/** print scores **/
+							if (Mediator.smallUserstoTest) {
+								System.out
+										.println("Score estimated Treshhold : "
+												+ scoreTreshhold
+												+ " Movie("
+												+ ratingsToEstimate.get(i).getMovie_lensID()
+												+ ")    ScoreCalc:" + score);
+
+							}
+							if (score > scoreTreshhold) {
+								vecint.add(Integer.parseInt(ratingsToEstimate
+										.get(i).getMovie_lensID()));
+							}
+						} catch (NoSuchUserException e) {
+
+						}
+					} else {
+						// System.out.println(movie1URI +
+						// " and user do not have at least 2 common predicates");
 					}
-				} catch (NoSuchUserException e){
-					
+				} else {
+					try {
+						double score = usersim.userSimilarity(new Long(
+								ratingsToEstimate.get(i).getMovie_lensID()),
+								9999999);
+						
+						
+						
+						/** print scores **/
+						if (Mediator.smallUserstoTest) {
+							System.out
+									.println("Score estimated Treshhold : "
+											+ scoreTreshhold
+											+ " Movie("
+											+ ratingsToEstimate.get(i).getMovie_lensID()
+											+ ")    ScoreCalc:" + score);
+
+						}
+						if (score > scoreTreshhold) {
+							vecint.add(Integer.parseInt(ratingsToEstimate
+									.get(i).getMovie_lensID()));
+						}
+						
+					} catch (NoSuchUserException e) {
+
+					}
 				}
 			}
 		} catch (IOException e) {
@@ -187,22 +243,69 @@ public class Matching {
 
 	public static Vector<Integer> calculateMahoutPearsonCorSimReturn(
 			Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
-			HashMap<String, String> idtoURIHashMap, double scoreTreshhold) {
+			HashMap<String, String> idtoURIHashMap, double scoreTreshhold,
+			ItemFeature iF, HashMap<String, Double> userProfile) {
 		Vector<Integer> vecint = new Vector<Integer>();
 		DataModel model;
 		try {
 			File f = new File("temp/file.dat");
 			model = new FileDataModel(f);
 			UserSimilarity usersim = new PearsonCorrelationSimilarity(model);
+
 			for (int i = 0; i < ratingsToEstimate.size(); i++) {
-				try {
-					double score = usersim.userSimilarity(new Long(
-							ratingsToEstimate.get(i).getMovie_lensID()), 9999999);
-					if (score > scoreTreshhold){
-						vecint.add(Integer.parseInt(ratingsToEstimate.get(i).getMovie_lensID()));
+				if (Mediator.USE_MIN_PREDICATES) {
+					// check if enough common Predicates
+					String movie1URI = idtoURIHashMap.get(ratingsToEstimate
+							.get(i).getMovie_lensID());
+					int comPredicates = iF.getCommonPredicates(movie1URI,
+							userProfile.keySet());
+					if (comPredicates >= Mediator.MIN_COMM_PREDICATES) {
+						try {
+							double score = usersim.userSimilarity(
+									new Long(ratingsToEstimate.get(i)
+											.getMovie_lensID()), 9999999);
+							score = (score + 1) / 2;
+							/** print scores **/
+							if (Mediator.smallUserstoTest) {
+								System.out
+										.println("Score estimated Treshhold : "
+												+ scoreTreshhold
+												+ " Movie("
+												+ ratingsToEstimate.get(i).getMovie_lensID()
+												+ ")    ScoreCalc:" + score);
+
+							}
+							
+							if (score > scoreTreshhold) {
+								vecint.add(Integer.parseInt(ratingsToEstimate
+										.get(i).getMovie_lensID()));
+							}
+						} catch (NoSuchUserException e) {
+
+						}
 					}
-				} catch (NoSuchUserException e){
-					
+				} else {
+					try {
+						double score = usersim.userSimilarity(new Long(
+								ratingsToEstimate.get(i).getMovie_lensID()),
+								9999999);
+						/** print scores **/
+						if (Mediator.smallUserstoTest) {
+							System.out
+									.println("Score estimated Treshhold : "
+											+ scoreTreshhold
+											+ " Movie("
+											+ ratingsToEstimate.get(i).getMovie_lensID()
+											+ ")    ScoreCalc:" + score);
+
+						}
+						if (score > scoreTreshhold) {
+							vecint.add(Integer.parseInt(ratingsToEstimate
+									.get(i).getMovie_lensID()));
+						}
+					} catch (NoSuchUserException e) {
+
+					}
 				}
 			}
 		} catch (IOException e) {
@@ -214,10 +317,11 @@ public class Matching {
 		}
 		return vecint;
 	}
-	
+
 	public static Vector<Integer> calculateMahoutLogLikelihoodSimReturn(
 			Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
-			HashMap<String, String> idtoURIHashMap, double scoreTreshhold) {
+			HashMap<String, String> idtoURIHashMap, double scoreTreshhold,
+			ItemFeature iF, HashMap<String, Double> userProfile) {
 		Vector<Integer> vecint = new Vector<Integer>();
 		DataModel model;
 		try {
@@ -225,14 +329,64 @@ public class Matching {
 			model = new FileDataModel(f);
 			UserSimilarity usersim = new LogLikelihoodSimilarity(model);
 			for (int i = 0; i < ratingsToEstimate.size(); i++) {
-				try {
-					double score = usersim.userSimilarity(new Long(
-							ratingsToEstimate.get(i).getMovie_lensID()), 9999999);
-					if (score > scoreTreshhold){
-						vecint.add(Integer.parseInt(ratingsToEstimate.get(i).getMovie_lensID()));
+				if (Mediator.USE_MIN_PREDICATES) {
+					// check if enough common Predicates
+					String movie1URI = idtoURIHashMap.get(ratingsToEstimate
+							.get(i).getMovie_lensID());
+					int comPredicates = iF.getCommonPredicates(movie1URI,
+							userProfile.keySet());
+					if (comPredicates >= Mediator.MIN_COMM_PREDICATES) {
+						
+						try {
+							double score = usersim.userSimilarity(
+									new Long(ratingsToEstimate.get(i)
+											.getMovie_lensID()), 9999999);
+
+							/** print scores **/
+							if (Mediator.smallUserstoTest) {
+								System.out
+										.println("Score estimated Treshhold : "
+												+ scoreTreshhold
+												+ " Movie("
+												+ ratingsToEstimate.get(i).getMovie_lensID()
+												+ ")    ScoreCalc:" + score);
+
+							}
+
+							if (score > scoreTreshhold) {
+								vecint.add(Integer.parseInt(ratingsToEstimate
+										.get(i).getMovie_lensID()));
+							}
+						} catch (NoSuchUserException e) {
+
+						}
+
 					}
-				} catch (NoSuchUserException e){
-					
+				} else {
+					try {
+						double score = usersim.userSimilarity(new Long(
+								ratingsToEstimate.get(i).getMovie_lensID()),
+								9999999);
+						
+						/** print scores **/
+						if (Mediator.smallUserstoTest) {
+							System.out
+									.println("Score estimated Treshhold : "
+											+ scoreTreshhold
+											+ " Movie("
+											+ ratingsToEstimate.get(i).getMovie_lensID()
+											+ ")    ScoreCalc:" + score);
+
+						}
+						
+						if (score > scoreTreshhold) {
+							vecint.add(Integer.parseInt(ratingsToEstimate
+									.get(i).getMovie_lensID()));
+
+						}
+					} catch (NoSuchUserException e) {
+
+					}
 				}
 			}
 		} catch (IOException e) {

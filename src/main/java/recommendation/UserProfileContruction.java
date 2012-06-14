@@ -37,6 +37,7 @@ public class UserProfileContruction {
 		// if backGround Data is set
 		if (backData != null) {
 			// run through the background Data
+			int n = backData.size();
 			for (int i = 0; i < backData.size(); i++) {
 				Rating r = backData.get(i);
 				Vector<String> featureVector = null;
@@ -61,7 +62,7 @@ public class UserProfileContruction {
 						// sum up the feature values
 						double a = hm_feature_value.get(featureVector.get(j)
 								.toString());
-						a += r.getRating() / 5;
+						a += (r.getRating() / 5);
 						hm_feature_value.put(featureVector.get(j).toString(),
 								new Double(a));
 					}
@@ -71,7 +72,7 @@ public class UserProfileContruction {
 			Set<String> keySet = hm_feature_value.keySet();
 			for (Iterator<String> it = keySet.iterator(); it.hasNext();) {
 				String f = it.next();
-				hm_feature_value.put(f, hm_feature_value.get(f) / 5);
+				hm_feature_value.put(f, hm_feature_value.get(f) / n);
 			}
 		}
 		return hm_feature_value;
@@ -83,11 +84,16 @@ public class UserProfileContruction {
 		HashMap<String, Double> hm_feature_value = new HashMap<String, Double>();
 		// if backGround Data is set
 		if (backData != null) {
+			
+			// count how many background data above trheshold rated, above n
+			int n = 0;
+			
 			// run through the background Data
 			for (int i = 0; i < backData.size(); i++) {
 				Rating r = backData.get(i);
 				// check if rating is above some positive Treshhold
 				if (r.getRating() >= UserProfileContruction.APPROACH_2_POS_TRESHHOLD) {
+					n++;
 					Vector<String> featureVector = null;
 					if (weighted == Mediator.WEIGHTED) {
 						featureVector = ((WeightedItemFeature) ifM)
@@ -111,7 +117,7 @@ public class UserProfileContruction {
 							// sum up the feature values
 							double a = hm_feature_value.get(featureVector
 									.get(j).toString());
-							a += r.getRating() / 5;
+							a += (r.getRating() / 5);
 							hm_feature_value.put(featureVector.get(j)
 									.toString(), new Double(a));
 						}
@@ -122,7 +128,7 @@ public class UserProfileContruction {
 			Set<String> keySet = hm_feature_value.keySet();
 			for (Iterator<String> it = keySet.iterator(); it.hasNext();) {
 				String f = it.next();
-				hm_feature_value.put(f, hm_feature_value.get(f) / 5);
+				hm_feature_value.put(f, hm_feature_value.get(f) / n);
 			}
 		}
 		return hm_feature_value;
