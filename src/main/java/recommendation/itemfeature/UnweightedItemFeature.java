@@ -6,76 +6,58 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.Vector;
 
-import recommendation.ItemFeatureMatrix;
-
 public class UnweightedItemFeature extends ItemFeature {
-	
-	public static final String DBPEDIA_UNWEIGHTED = "1";
-	public static final String DBPEDIA_WEIGHTED = "3";
-	public static final String FREEBASE_UNWEIGHTED = "2";
 
 	private HashMap<String, Vector<String>> hm_movieURI_featurelist = null;
 
 	/**
 	 * 
 	 * @param source
-	 * @param predFilter if null all predicates are taken, otherwise only the triples with
-	 * the predicates that are in the predicateFilter are taken
+	 * @param predFilter
+	 *            if null all predicates are taken, otherwise only the triples with the predicates that are in the
+	 *            predicateFilter are taken
 	 */
 	public void initializePredicateHashMap(String source, Vector<String> predFilter) {
+
+		System.out.println("guguginitialize Predicate Hashmap: " + source);
 		hm_movieURI_featurelist = new HashMap<String, Vector<String>>();
 		BufferedReader reader = null;
 		try {
 
-			if (source.equals(UnweightedItemFeature.FREEBASE_UNWEIGHTED))
-				reader = new BufferedReader(new FileReader(new File(
-						UnweightedItemFeature.movieFreebasePredicatesFile)));
-			else if (source.equals(ItemFeatureMatrix.DBPEDIA_UNWEIGHTED))
-				reader = new BufferedReader(new FileReader(new File(
-						UnweightedItemFeature.movieDBPediaPredicatesFile)));
+			if (source.equals(ItemFeature.FREEBASE_UNWEIGHTED))
+				reader = new BufferedReader(new FileReader(new File(UnweightedItemFeature.movieFreebasePredicatesFile)));
+			else if (source.equals(ItemFeature.DBPEDIA_UNWEIGHTED))
+				reader = new BufferedReader(new FileReader(new File(UnweightedItemFeature.movieDBPediaPredicatesFile)));
 
 			if (reader != null) {
 				String line = reader.readLine();
-
-				// index for hashmap and then matrix
-				int i = 1;
 
 				while (line != null) {
 
 					String[] parts = line.split("\t");
 					// <sub> <pred> <ob>
 					if (parts.length == 3) {
-						String s = parts[0];
-						String p = parts[1];
-						String o = parts[2].substring(0, parts[2].length() - 1);
-						String newS = s.replace("<", "");
-						newS = newS.replace(">", "");
-						String newP = p.replace("<", "");
-						newP = newP.replace(">", "");
-						String newO = o.replace("<", "");
-						newO = newO.replace(">", "");
-						if (newO.contains("\"")) {
-							newO = newO.replaceFirst("\"", "");
-							if (newO.contains("\"")) {
-								newO = newO
-										.substring(0, newO.indexOf("\""));
+						String sub = parts[0];
+						String pred = parts[1];
+						String obj = parts[2].substring(0, parts[2].length());
+						if (obj.contains("\"")) {
+							obj = obj.replaceFirst("\"", "");
+							if (obj.contains("\"")) {
+								obj = obj.substring(0, obj.indexOf("\""));
 							}
 						}
-						
-						if (predFilter == null || predFilter.contains(newP)){
-							
-							// cut the dot at the end
-							String feature = newP + "::" + newO;
-	
-							if (!hm_movieURI_featurelist.containsKey(newS)){
-								hm_movieURI_featurelist.put(newS, new Vector<String>());
-							}
-							Vector<String> v = hm_movieURI_featurelist.get(newS);
-							v.add(feature);
-						} else
-							;//System.out.println("filter out: " + newP);
+						// cut the dot at the end
+						String feature = pred + "::" + obj;
+
+						if (!hm_movieURI_featurelist.containsKey(sub)) {
+							hm_movieURI_featurelist.put(sub, new Vector<String>());
+						}
+						Vector<String> v = hm_movieURI_featurelist.get(sub);
+						v.add(feature);
 					}
 					line = reader.readLine();
 				}
@@ -86,39 +68,84 @@ public class UnweightedItemFeature extends ItemFeature {
 			e.printStackTrace();
 		}
 	}
-	
-	public HashMap<String, Vector<String>> getEntireMoviesAndFeature(){
+
+	/**
+	 * 
+	 * @return moviefeatures of all movies
+	 */
+	public HashMap<String, Vector<String>> getEntireMoviesAndFeature() {
 		return this.hm_movieURI_featurelist;
 	}
-	
-	
-	
+
 	public double getScoreOf(String uri, String feature) {
 		Vector<String> vecStrng = this.hm_movieURI_featurelist.get(uri);
-		if (vecStrng != null){
-			for (int i = 0; i < vecStrng.size(); i++){
+		if (vecStrng != null) {
+			for (int i = 0; i < vecStrng.size(); i++) {
 				String s = vecStrng.get(i);
-				if (s.equals(feature)){
+				if (s.equals(feature)) {
 					return 1;
 				}
 			}
 		}
 		return 0;
 	}
-	
-	public Vector<String> getFeatureOfMovie(String movieURI){
+
+	public Vector<String> getFeatureOfMovie(String movieURI) {
 		return hm_movieURI_featurelist.get(movieURI);
 	}
-	
 
-	public int getCommonPredicates(String movieURI1, String movieURI2){
+	public Vector<String> getDistinctPredicates() {
+		Vector<String> ret = new Vector<String>();
+		if (hm_movieURI_featurelist != null) {
+			Set<String> set = hm_movieURI_featurelist.keySet();
+			for (Iterator<String> it = set.iterator(); it.hasNext();) {
+				String movie = it.next();
+				Vector<String> featureVec = hm_movieURI_featurelist.get(movie);
+				for (int i = 0; i < featureVec.size(); i++) {
+					String feature = featureVec.get(i);
+					String predicate = feature.substring(0, feature.indexOf("::"));
+					if (!ret.contains(predicate)) {
+						ret.add(predicate);
+					}
+				}
+
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * filterPredicates will read actual hashmap and removi
+	 * 
+	 * @param predFilter
+	 *            Vector<String>
+	 */
+	public void filterPredicates(Vector<String> predFilter) {
+		if (this.hm_movieURI_featurelist != null) {
+			Set<String> set = hm_movieURI_featurelist.keySet();
+			for (Iterator<String> it = set.iterator(); it.hasNext();) {
+				String movie = it.next();
+				Vector<String> featureVec = hm_movieURI_featurelist.get(movie);
+				// remove shifts the position, therefore begin from the back
+				for (int i = featureVec.size() - 1; i >= 0; i--) {
+					String feature = featureVec.get(i);
+					String predicate = feature.substring(0, feature.indexOf("::"));
+					if (!predFilter.contains(predicate)) {
+						featureVec.remove(i);
+					}
+				}
+			}
+		}
+	}
+
+	public int getCommonPredicates(String movieURI1, String movieURI2) {
 		int ret = 0;
 		Vector<String> movieFeatures1 = hm_movieURI_featurelist.get(movieURI1);
 		Vector<String> movieFeatures2 = hm_movieURI_featurelist.get(movieURI2);
 		for (int i = 0; i < movieFeatures1.size(); i++) {
 			String feature = movieFeatures1.get(i);
-			if (movieFeatures2.contains(feature)){
-				ret ++;
+			if (movieFeatures2.contains(feature)) {
+				ret++;
 			}
 		}
 		return ret;

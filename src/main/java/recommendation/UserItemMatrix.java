@@ -9,8 +9,6 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.Vector;
 
-import org.ejml.simple.SimpleMatrix;
-
 import bean.Rating;
 
 /**
@@ -25,10 +23,10 @@ import bean.Rating;
 public class UserItemMatrix {
 
 	private final String ratedMoviesFile="files/user_ratedmovies-timestamps.dat";
-	
+	// private final String ratedMoviesFile="testfiles/testrat.dat";
 	
 	private HashMap<Integer, Vector<Rating>> hm_user_ratings = null;
-	
+
 
 	/**
 	 * initializes the the file user ratings in the Hashmap
@@ -37,7 +35,7 @@ public class UserItemMatrix {
 		hm_user_ratings =  new HashMap<Integer, Vector<Rating>>();
 		BufferedReader reader;
 		try {
-			reader = new BufferedReader(new FileReader(new File(this.ratedMoviesFile)));
+			reader = new BufferedReader(new FileReader(new File(ratedMoviesFile)));
 
 			String line = reader.readLine();
 
@@ -46,18 +44,20 @@ public class UserItemMatrix {
 				String[] parts = line.split("\t");
 				if (parts.length == 4) {
 					String userID = parts[0];
-					String movieID = parts[1];
-					String rating = parts[2];
-					String timestamp = parts[3];
-					Rating r = new Rating();
-					r.setMovie_lensID(movieID);
-					r.setTimestamp(Long.parseLong(timestamp));
-					r.setRating(Double.parseDouble(rating));
-					if (this.hm_user_ratings.get(new Integer(Integer.parseInt(userID))) == null){
-						this.hm_user_ratings.put(new Integer(Integer.parseInt(userID)), new Vector<Rating>());
+					if (Integer.parseInt(userID) < Mediator.UPPER_LIMIT_USERID){		
+						String movieID = parts[1];
+						String rating = parts[2];
+						String timestamp = parts[3];
+						Rating r = new Rating();
+						r.setMovie_lensID(Long.parseLong(movieID));
+						r.setTimestamp(Long.parseLong(timestamp));
+						r.setRating(Double.parseDouble(rating));
+						if (this.hm_user_ratings.get(new Integer(Integer.parseInt(userID))) == null){
+							this.hm_user_ratings.put(new Integer(Integer.parseInt(userID)), new Vector<Rating>());
+						}
+						Vector<Rating> ratings = this.hm_user_ratings.get(new Integer(Integer.parseInt(userID)));
+						ratings.add(r);
 					}
-					Vector<Rating> ratings = this.hm_user_ratings.get(new Integer(Integer.parseInt(userID)));
-					ratings.add(r);
 				}
 				line = reader.readLine();
 			}
@@ -85,7 +85,7 @@ public class UserItemMatrix {
 					String rating = parts[2];
 					String timestamp = parts[3];
 					Rating r = new Rating();
-					r.setMovie_lensID(movieID);
+					r.setMovie_lensID(Long.parseLong(movieID));
 					r.setTimestamp(Long.parseLong(timestamp));
 					r.setRating(Double.parseDouble(rating));
 					if (this.hm_user_ratings.get(new Integer(Integer.parseInt(userID))) == null){
@@ -111,10 +111,12 @@ public class UserItemMatrix {
 	 * @return Vector of Ratings class
 	 */
 	public Vector<Rating> getRatingsOfUser(String userid) {
-		if (this.hm_user_ratings == null)
+		if (this.hm_user_ratings == null){ 
+			System.out.println("hm_ratings Hasmap is null");
 			return null;
-		else 
+		} else {
 			return hm_user_ratings.get(new Integer(Integer.parseInt(userid)));
+		}
 	}
 	
 	/**

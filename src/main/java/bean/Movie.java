@@ -6,7 +6,7 @@ public class Movie {
 
 	private Vector<Feature> features;
 	private String uri;
-	private String movielens_id;
+	private Long movielens_id;
 	
 	public String getUri() {
 		return uri;
@@ -16,11 +16,11 @@ public class Movie {
 		this.uri = uri;
 	}
 
-	public String getMovielens_id() {
+	public Long getMovielens_id() {
 		return movielens_id;
 	}
 
-	public void setMovielens_id(String movielens_id) {
+	public void setMovielens_id(Long movielens_id) {
 		this.movielens_id = movielens_id;
 	}
 

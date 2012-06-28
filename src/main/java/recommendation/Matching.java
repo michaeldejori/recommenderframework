@@ -38,6 +38,7 @@ public class Matching {
 				for (int j = 0; j < movieFeatures.size(); j++) {
 					String f = movieFeatures.get(j);
 					if (userProfile.containsKey(f)) {
+						System.out.println(f + "is a common feature");
 						sumDotProduct += userProfile.get(f)
 								* iF.getScoreOf(movieURI, f);
 					}
@@ -71,7 +72,7 @@ public class Matching {
 
 	public static void calculateMahoutUncenteredCosineSim(
 			Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
-			HashMap<String, String> idtoURIHashMap) {
+			HashMap<Long, String> idtoURIHashMap) {
 		DataModel model;
 		try {
 			File f = new File("temp/file.dat");
@@ -88,6 +89,8 @@ public class Matching {
 						+ ratingsToEstimate.get(i).getRating() + ")\n";
 				gui.newMessage(toDisplay);
 			}
+		} catch (NoSuchUserException e) {
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -99,7 +102,7 @@ public class Matching {
 
 	public static void calculateMahoutPearsonCorSim(
 			Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
-			HashMap<String, String> idtoURIHashMap) {
+			HashMap<Long, String> idtoURIHashMap) {
 		DataModel model;
 		try {
 			File f = new File("temp/file.dat");
@@ -132,7 +135,7 @@ public class Matching {
 
 	public static void calculateMahoutLogLikelihoodSim(
 			Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
-			HashMap<String, String> idtoURIHashMap) {
+			HashMap<Long, String> idtoURIHashMap) {
 		DataModel model;
 		try {
 			File f = new File("temp/file.dat");
@@ -150,32 +153,77 @@ public class Matching {
 				gui.newMessage(toDisplay);
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (TasteException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
-	public static Vector<Integer> calculateMahoutUncenteredCosineSimReturn(
+	public static Vector<Long> calculateMyCosineSimReturn(
 			Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
-			HashMap<String, String> idtoURIHashMap, double scoreTreshhold,
+			HashMap<Long, String> idtoURIHashMap, double scoreTreshhold,
 			ItemFeature iF, HashMap<String, Double> userProfile) {
-		Vector<Integer> vecint = new Vector<Integer>();
+		
+		Vector<Long> vecint = new Vector<Long>();
+		for (int i = 0; i < ratingsToEstimate.size(); i++) {
+			// compute dot Product
+			double sumDotProduct = 0;
+			double score = 0;
+			String movieURI = idtoURIHashMap.get(ratingsToEstimate.get(i)
+					.getMovie_lensID());
+			Vector<String> movieFeatures = iF.getFeatureOfMovie(movieURI);
+			// dot product multiply same features
+			if (movieFeatures != null) {
+				for (int j = 0; j < movieFeatures.size(); j++) {
+					String f = movieFeatures.get(j);
+					if (userProfile.containsKey(f)) {
+						sumDotProduct += userProfile.get(f)
+								* iF.getScoreOf(movieURI, f);
+					}
+				}
+				// compute ||A|| A[1]*A[1] + A[2]*A[2] + .... dann noch wurzel
+				double sc = 0;
+				Collection<Double> c = userProfile.values();
+				for (Iterator<Double> it = c.iterator(); it.hasNext();) {
+					double value = it.next();
+					sc += value * value;
+				}
+
+				// compute ||B|| B[1]*B[1] + B[2]*B[2] + .... dann noch wurzel
+				double sb = 0;
+				for (int k = 0; k < movieFeatures.size(); k++) {
+					String feature = movieFeatures.get(k);
+					double value = iF.getScoreOf(movieURI, feature);
+					sb += value * value;
+				}
+				score = sumDotProduct / (Math.sqrt(sc) * Math.sqrt(sb));
+				if (score > scoreTreshhold){
+					vecint.add(ratingsToEstimate
+							.get(i).getMovie_lensID());
+				}
+			}
+		}
+		return vecint;
+	}
+	
+	public static Vector<Long> calculateMahoutUncenteredCosineSimReturn(
+			Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
+			HashMap<Long, String> idtoURIHashMap, double scoreTreshhold,
+			ItemFeature iF, HashMap<String, Double> userProfile, int minSamePredicates) {
+		Vector<Long> vecint = new Vector<Long>();
 		DataModel model;
 		try {
 			File f = new File("temp/file.dat");
 			model = new FileDataModel(f);
 			UserSimilarity usersim = new UncenteredCosineSimilarity(model);
 			for (int i = 0; i < ratingsToEstimate.size(); i++) {
-				if (Mediator.USE_MIN_PREDICATES) {
+				if (minSamePredicates > 0) {
 					// check if enough common Predicates
 					String movie1URI = idtoURIHashMap.get(ratingsToEstimate
 							.get(i).getMovie_lensID());
 					int comPredicates = iF.getCommonPredicates(movie1URI,
 							userProfile.keySet());
-					if (comPredicates >= Mediator.MIN_COMM_PREDICATES) {
+					if (comPredicates >= minSamePredicates) {
 						try {
 							double score = usersim.userSimilarity(
 									new Long(ratingsToEstimate.get(i)
@@ -193,8 +241,8 @@ public class Matching {
 
 							}
 							if (score > scoreTreshhold) {
-								vecint.add(Integer.parseInt(ratingsToEstimate
-										.get(i).getMovie_lensID()));
+								vecint.add(ratingsToEstimate
+										.get(i).getMovie_lensID());
 							}
 						} catch (NoSuchUserException e) {
 
@@ -208,9 +256,6 @@ public class Matching {
 						double score = usersim.userSimilarity(new Long(
 								ratingsToEstimate.get(i).getMovie_lensID()),
 								9999999);
-						
-						
-						
 						/** print scores **/
 						if (Mediator.smallUserstoTest) {
 							System.out
@@ -222,8 +267,8 @@ public class Matching {
 
 						}
 						if (score > scoreTreshhold) {
-							vecint.add(Integer.parseInt(ratingsToEstimate
-									.get(i).getMovie_lensID()));
+							vecint.add(ratingsToEstimate
+									.get(i).getMovie_lensID());
 						}
 						
 					} catch (NoSuchUserException e) {
@@ -241,11 +286,11 @@ public class Matching {
 		return vecint;
 	}
 
-	public static Vector<Integer> calculateMahoutPearsonCorSimReturn(
+	public static Vector<Long> calculateMahoutPearsonCorSimReturn(
 			Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
-			HashMap<String, String> idtoURIHashMap, double scoreTreshhold,
-			ItemFeature iF, HashMap<String, Double> userProfile) {
-		Vector<Integer> vecint = new Vector<Integer>();
+			HashMap<Long, String> idtoURIHashMap, double scoreTreshhold,
+			ItemFeature iF, HashMap<String, Double> userProfile, int minSamePredicates) {
+		Vector<Long> vecint = new Vector<Long>();
 		DataModel model;
 		try {
 			File f = new File("temp/file.dat");
@@ -253,13 +298,13 @@ public class Matching {
 			UserSimilarity usersim = new PearsonCorrelationSimilarity(model);
 
 			for (int i = 0; i < ratingsToEstimate.size(); i++) {
-				if (Mediator.USE_MIN_PREDICATES) {
+				if (minSamePredicates > 0) {
 					// check if enough common Predicates
 					String movie1URI = idtoURIHashMap.get(ratingsToEstimate
 							.get(i).getMovie_lensID());
 					int comPredicates = iF.getCommonPredicates(movie1URI,
 							userProfile.keySet());
-					if (comPredicates >= Mediator.MIN_COMM_PREDICATES) {
+					if (comPredicates >= minSamePredicates) {
 						try {
 							double score = usersim.userSimilarity(
 									new Long(ratingsToEstimate.get(i)
@@ -277,8 +322,8 @@ public class Matching {
 							}
 							
 							if (score > scoreTreshhold) {
-								vecint.add(Integer.parseInt(ratingsToEstimate
-										.get(i).getMovie_lensID()));
+								vecint.add(ratingsToEstimate
+										.get(i).getMovie_lensID());
 							}
 						} catch (NoSuchUserException e) {
 
@@ -300,8 +345,8 @@ public class Matching {
 
 						}
 						if (score > scoreTreshhold) {
-							vecint.add(Integer.parseInt(ratingsToEstimate
-									.get(i).getMovie_lensID()));
+							vecint.add(ratingsToEstimate
+									.get(i).getMovie_lensID());
 						}
 					} catch (NoSuchUserException e) {
 
@@ -318,24 +363,24 @@ public class Matching {
 		return vecint;
 	}
 
-	public static Vector<Integer> calculateMahoutLogLikelihoodSimReturn(
+	public static Vector<Long> calculateMahoutLogLikelihoodSimReturn(
 			Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
-			HashMap<String, String> idtoURIHashMap, double scoreTreshhold,
-			ItemFeature iF, HashMap<String, Double> userProfile) {
-		Vector<Integer> vecint = new Vector<Integer>();
+			HashMap<Long, String> idtoURIHashMap, double scoreTreshhold,
+			ItemFeature iF, HashMap<String, Double> userProfile, int minSamePredicates) {
+		Vector<Long> vecint = new Vector<Long>();
 		DataModel model;
 		try {
 			File f = new File("temp/file.dat");
 			model = new FileDataModel(f);
 			UserSimilarity usersim = new LogLikelihoodSimilarity(model);
 			for (int i = 0; i < ratingsToEstimate.size(); i++) {
-				if (Mediator.USE_MIN_PREDICATES) {
+				if (minSamePredicates > 0) {
 					// check if enough common Predicates
 					String movie1URI = idtoURIHashMap.get(ratingsToEstimate
 							.get(i).getMovie_lensID());
 					int comPredicates = iF.getCommonPredicates(movie1URI,
 							userProfile.keySet());
-					if (comPredicates >= Mediator.MIN_COMM_PREDICATES) {
+					if (comPredicates >= minSamePredicates) {
 						
 						try {
 							double score = usersim.userSimilarity(
@@ -354,8 +399,8 @@ public class Matching {
 							}
 
 							if (score > scoreTreshhold) {
-								vecint.add(Integer.parseInt(ratingsToEstimate
-										.get(i).getMovie_lensID()));
+								vecint.add(ratingsToEstimate
+										.get(i).getMovie_lensID());
 							}
 						} catch (NoSuchUserException e) {
 
@@ -380,8 +425,8 @@ public class Matching {
 						}
 						
 						if (score > scoreTreshhold) {
-							vecint.add(Integer.parseInt(ratingsToEstimate
-									.get(i).getMovie_lensID()));
+							vecint.add(ratingsToEstimate
+									.get(i).getMovie_lensID());
 
 						}
 					} catch (NoSuchUserException e) {

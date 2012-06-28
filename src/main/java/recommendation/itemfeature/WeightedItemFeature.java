@@ -9,11 +9,12 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.Vector;
 
-import recommendation.ItemFeatureMatrix;
-
 public class WeightedItemFeature extends ItemFeature {
 	// file feature Scores
 	public static String dbpediaFeatureScoresFile = "files/dbpediafeaturescores.dat";
+	public static String freebaseFeatureScoresFile = "files/freebasefeaturescores.dat";
+
+	private HashMap<String, Vector<FeatureScore>> hm_featureScore = null;
 
 	private class FeatureScore {
 		private String feature;
@@ -36,46 +37,41 @@ public class WeightedItemFeature extends ItemFeature {
 		}
 	}
 
-	private HashMap<String, Vector<FeatureScore>> hm_featureScore = null;
-
 	/**
-	 * initializes local Hashmap movieURI -> FeatureSore (feature , score) from
-	 * the file
+	 * initializes local Hashmap movieURI -> FeatureSore (feature , score) from the file
 	 * 
-	 * @param predFilter, if null all predicates are taken, otherwise only the triples with
-	 * the predicates that are in the predicateFilter are taken
+	 * @param predFilter
+	 *            , if null all predicates are taken, otherwise only the triples with the predicates that are in the
+	 *            predicateFilter are taken
 	 */
-	public void initializeFeatureScoresHasmap(Vector<String> predFilter) {
+	public void initializeFeatureScoresHasmap(String source, Vector<String> predFilter) {
 		this.hm_featureScore = new HashMap<String, Vector<FeatureScore>>();
 		BufferedReader reader = null;
 		try {
-			reader = new BufferedReader(new FileReader(new File(
-					WeightedItemFeature.dbpediaFeatureScoresFile)));
+			if (source.equals(ItemFeature.FREEBASE_WEIGHTED)) {
+				reader = new BufferedReader(new FileReader(new File(WeightedItemFeature.freebaseFeatureScoresFile)));
+			} else if (source.equals(ItemFeature.DBPEDIA_WEIGHTED)) {
+				reader = new BufferedReader(new FileReader(new File(WeightedItemFeature.dbpediaFeatureScoresFile)));
+			}
 			if (reader != null) {
 				String line = reader.readLine();
 				while (line != null) {
 					String[] parts = line.split("\t");
 					if (parts.length == 4) {
-						if (predFilter == null || predFilter.contains(parts[2])) {
-							// score movie pred obj
-							double score = Double.parseDouble(parts[0]);
-							String movieURI = parts[1];
-							String pred = parts[2];
-							String obj = parts[3];
-							FeatureScore f = new FeatureScore();
-							f.setFeature(pred + "::" + obj);
-							f.setScore(score);
-							if (!this.hm_featureScore.containsKey(movieURI)) {
-								this.hm_featureScore
-										.put(movieURI,
-												new Vector<WeightedItemFeature.FeatureScore>());
-							}
-							Vector<WeightedItemFeature.FeatureScore> v = this.hm_featureScore
-									.get(movieURI);
-							v.add(f);
+						// score movie pred obj
+						double score = Double.parseDouble(parts[0]);
+						String movieURI = parts[1];
+						String pred = parts[2];
+						String obj = parts[3];
+						FeatureScore f = new FeatureScore();
+						f.setFeature(pred + "::" + obj);
+						f.setScore(score);
+						if (!this.hm_featureScore.containsKey(movieURI)) {
+							this.hm_featureScore.put(movieURI, new Vector<WeightedItemFeature.FeatureScore>());
 						}
-						else
-							; //System.out.println("filter out: " + parts[2]);
+						Vector<WeightedItemFeature.FeatureScore> v = this.hm_featureScore.get(movieURI);
+						v.add(f);
+
 					}
 					line = reader.readLine();
 				}
@@ -119,24 +115,70 @@ public class WeightedItemFeature extends ItemFeature {
 		}
 		return 0;
 	}
-	
 
-	public int getCommonPredicates(String movieURI1, Set<String> set){
+	public int getCommonPredicates(String movieURI1, Set<String> set) {
 		int ret = 0;
 		Vector<FeatureScore> movieFeatures1 = hm_featureScore.get(movieURI1);
-		if (movieFeatures1 != null){
+		if (movieFeatures1 != null) {
 			for (Iterator<String> it = set.iterator(); it.hasNext();) {
 				String feature = it.next();
 				for (int j = 0; j < movieFeatures1.size(); j++) {
 					FeatureScore f = movieFeatures1.get(j);
-					if (feature.equals(f.getFeature())){
-						ret ++;
+					if (feature.equals(f.getFeature())) {
+						ret++;
 					}
 				}
 			}
 			return ret;
-		} else return 0;
+		} else
+			return 0;
 	}
 
+	public Vector<String> getDistinctPredicates() {
+		Vector<String> ret = new Vector<String>();
+		if (hm_featureScore != null) {
+			Set<String> set = hm_featureScore.keySet();
+			for (Iterator<String> it = set.iterator(); it.hasNext();) {
+				String movie = it.next();
+				Vector<FeatureScore> featureVec = hm_featureScore.get(movie);
+				for (int i = 0; i < featureVec.size(); i++) {
+					FeatureScore fs = featureVec.get(i);
+					String feature = fs.getFeature();
+					String predicate = feature.substring(0, feature.indexOf("::"));
+					if (!ret.contains(predicate)) {
+						ret.add(predicate);
+					}
+				}
+
+			}
+		}
+		return ret;
+	}
+
+	/**
+	 * filterPredicates will read actual hashmap and removi
+	 * 
+	 * @param predFilter Vector<String>
+	 */
+	public void filterPredicates(Vector<String> predFilter) {
+		if (hm_featureScore != null) {
+			System.out.println("1");
+			Set<String> set = hm_featureScore.keySet();
+			System.out.println("hier");
+			for (Iterator<String> it = set.iterator(); it.hasNext();) {
+				String movie = it.next();
+				Vector<FeatureScore> featureVec = hm_featureScore.get(movie);
+				// remove shifts the position, therefore begin from the back
+				for (int i = featureVec.size() - 1; i >= 0 ; i--) {
+					FeatureScore fs = featureVec.get(i);
+					String feature = fs.getFeature();
+					String predicate = feature.substring(0, feature.indexOf("::"));
+					if (!predFilter.contains(predicate)) {
+						featureVec.remove(i);
+					}
+				}
+			}
+		}
+	}
 
 }

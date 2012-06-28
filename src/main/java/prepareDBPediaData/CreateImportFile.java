@@ -146,7 +146,6 @@ public class CreateImportFile {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
 	}
 
 	private boolean isContainedInMoviePredicates(String movieURI) {

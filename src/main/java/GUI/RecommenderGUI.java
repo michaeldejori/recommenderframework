@@ -6,11 +6,9 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.Set;
 import java.util.Vector;
 
-import javax.naming.ldap.Rdn;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.Box;
@@ -24,14 +22,10 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.border.TitledBorder;
 
-import GUI.CheckBoxList.ListItem;
-
 import recommendation.Mediator;
-import recommendation.UserProfileContruction;
 import recommendation.itemfeature.ItemFeature;
 
 public class RecommenderGUI extends JFrame implements MassageListener {
-	private static RecommenderGUI gui = null;
 
 	Mediator m = null;
 	private JRadioButton rdbtnFreebase = null;
@@ -40,7 +34,8 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 	private JTextField useridtextField = null;
 	private JRadioButton rdbtnUnweighted = null;
 	private JRadioButton rdbtnWeighted = null;
-	private JRadioButton rdbtnMyCosine = null;
+	private JRadioButton rdbtnWeightedUserprofile = null;
+	private JRadioButton rdbtnUnweightedUserprofile = null;
 	private JRadioButton rdbtnCosineSimilartiy = null;
 	private JRadioButton rdbtnPearsonCor = null;
 	private JRadioButton rdbtnLoglikelihood = null;
@@ -49,19 +44,23 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 	private JTextArea textArea_1 = null;
 	private CheckBoxList<String> cl = null;
 	private JButton btnSelectImportant = null;
-
+	private JButton deselectAllButton = null;
+	private JButton selectAllButton = null;
+	private JPanel panel_7 = null;
+	private JScrollPane scrollListFeatures = null;
+	private JTextField textFieldMinSamePred = null;
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 	private final Action initializeDataSource = new SwingAction();
 	private final Action action_1 = new SwingAction_1();
-	private final Action action = new SwingAction_2();
 	private final Action action_2 = new SwingAction_3();
 	private final Action precisionrecallAction = new SwingAction_4();
 	private final Action top5ListAction = new Top5Action();
 	private final Action selectImportantAction = new SwingAction_SelImportFeatures();
 
+	@SuppressWarnings("serial")
 	public RecommenderGUI() {
 		super("Recommender System Framework");
 		setSize(1300, 600);
@@ -76,29 +75,38 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 		getContentPane().add(panel, BorderLayout.NORTH);
 
 		JPanel panel_1 = new JPanel();
-		panel_1.setBorder(new TitledBorder(null, "JPanel title",
-				TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		panel_1.setBorder(new TitledBorder(null, "Data Source", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		panel_1.setLayout(new GridLayout(0, 2));
 		panel.add(panel_1);
 
 		rdbtnFreebase = new JRadioButton("Freebase");
+		rdbtnFreebase.setSelected(true);
 		panel_1.add(rdbtnFreebase);
-		rdbtnFreebase.setAction(action);
+		rdbtnFreebase.setAction(new AbstractAction("Freebase") {
+
+			public void actionPerformed(ActionEvent e) {
+				if (((JRadioButton) e.getSource()).isSelected()) {
+					rdbtnDbpedia.setSelected(false);
+				}
+
+			}
+		});
 
 		rdbtnDbpedia = new JRadioButton("dbPedia");
-		rdbtnDbpedia.setSelected(true);
+		rdbtnDbpedia.setSelected(false);
 		panel_1.add(rdbtnDbpedia);
-		rdbtnDbpedia.setAction(action_1);
+		rdbtnDbpedia.setAction(new AbstractAction("dbPedia") {
 
-		JButton btnInitializeData = new JButton("Initialize Data");
-		panel_1.add(btnInitializeData);
-		btnInitializeData.setAction(initializeDataSource);
+			public void actionPerformed(ActionEvent e) {
+				if (((JRadioButton) e.getSource()).isSelected()) {
+					rdbtnFreebase.setSelected(false);
+				}
 
-		JPanel panel_3 = new JPanel();
-		panel_3.setBorder(new TitledBorder(null, "Item Features",
-				TitledBorder.LEADING, TitledBorder.TOP, null, null));
-		panel.add(panel_3);
+			}
+		});
 
 		rdbtnUnweighted = new JRadioButton("Unweighted");
+		panel_1.add(rdbtnUnweighted);
 		rdbtnUnweighted.setSelected(true);
 		rdbtnUnweighted.setAction(new AbstractAction("Unweighted") {
 
@@ -109,9 +117,9 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 
 			}
 		});
-		panel_3.add(rdbtnUnweighted);
 
 		rdbtnWeighted = new JRadioButton("Weighted");
+		panel_1.add(rdbtnWeighted);
 		rdbtnWeighted.setAction(new AbstractAction("Weighted") {
 
 			public void actionPerformed(ActionEvent e) {
@@ -121,40 +129,71 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 
 			}
 		});
-		panel_3.add(rdbtnWeighted);
+
+		JButton btnInitializeData = new JButton("Initialize Data");
+		panel_1.add(btnInitializeData);
+		btnInitializeData.setAction(initializeDataSource);
+
+		JPanel weightedProfilePanel = new JPanel();
+		weightedProfilePanel.setBorder(new TitledBorder(null, "User Profile Weighted", TitledBorder.LEADING,
+				TitledBorder.TOP, null, null));
+		weightedProfilePanel.setLayout(new GridLayout(0, 1));
+		panel.add(weightedProfilePanel);
+
+		rdbtnWeightedUserprofile = new JRadioButton("Weighted profile");
+		weightedProfilePanel.add(rdbtnWeightedUserprofile);
+		rdbtnWeightedUserprofile.setAction(new AbstractAction("Weighted profile") {
+			private static final long serialVersionUID = 1L;
+
+			public void actionPerformed(ActionEvent e) {
+				if (((JRadioButton) e.getSource()).isSelected()) {
+					rdbtnUnweightedUserprofile.setSelected(false);
+				}
+			}
+		});
+
+		rdbtnUnweightedUserprofile = new JRadioButton("Unweighted profile");
+		weightedProfilePanel.add(rdbtnUnweightedUserprofile);
+		rdbtnUnweightedUserprofile.setSelected(true);
+		rdbtnUnweightedUserprofile.setAction(new AbstractAction("Unweighted profile") {
+
+			public void actionPerformed(ActionEvent e) {
+				if (((JRadioButton) e.getSource()).isSelected()) {
+					rdbtnWeightedUserprofile.setSelected(false);
+				}
+			}
+		});
+
+		JPanel minSamePredPanel = new JPanel();
+		minSamePredPanel.setBorder(new TitledBorder(null, "Matching restrictions", TitledBorder.LEADING,
+				TitledBorder.TOP, null, null));
+		minSamePredPanel.setLayout(new GridLayout(0, 1));
+		panel.add(minSamePredPanel);
+
+		JLabel lblNewLabel_1 = new JLabel("New label");
+		minSamePredPanel.add(lblNewLabel_1);
+
+		textFieldMinSamePred = new JTextField("0");
+		minSamePredPanel.add(textFieldMinSamePred);
+		textFieldMinSamePred.setColumns(10);
 
 		JPanel panel_4 = new JPanel();
-		panel_4.setBorder(new TitledBorder(null, "Similarity Method",
-				TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		panel_4.setBorder(new TitledBorder(null, "Similarity Method", TitledBorder.LEADING, TitledBorder.TOP, null,
+				null));
 		panel.add(panel_4);
 
-		rdbtnMyCosine = new JRadioButton("Mein Cosine Similartiy");
-		rdbtnMyCosine.setAction(new AbstractAction("Mein Cosine Similartiy") {
+		rdbtnCosineSimilartiy = new JRadioButton("Cosine Similartiy");
+		rdbtnCosineSimilartiy.setSelected(true);
+		rdbtnCosineSimilartiy.setAction(new AbstractAction("Cosine Similartiy") {
 
 			public void actionPerformed(ActionEvent e) {
 				if (((JRadioButton) e.getSource()).isSelected()) {
 					rdbtnPearsonCor.setSelected(false);
 					rdbtnLoglikelihood.setSelected(false);
-					rdbtnCosineSimilartiy.setSelected(false);
 				}
 
 			}
 		});
-		panel_4.add(rdbtnMyCosine);
-
-		rdbtnCosineSimilartiy = new JRadioButton("Cosine Similartiy");
-		rdbtnCosineSimilartiy
-				.setAction(new AbstractAction("Cosine Similartiy") {
-
-					public void actionPerformed(ActionEvent e) {
-						if (((JRadioButton) e.getSource()).isSelected()) {
-							rdbtnMyCosine.setSelected(false);
-							rdbtnPearsonCor.setSelected(false);
-							rdbtnLoglikelihood.setSelected(false);
-						}
-
-					}
-				});
 		panel_4.add(rdbtnCosineSimilartiy);
 
 		rdbtnPearsonCor = new JRadioButton("Pearson Cor");
@@ -162,7 +201,6 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 
 			public void actionPerformed(ActionEvent e) {
 				if (((JRadioButton) e.getSource()).isSelected()) {
-					rdbtnMyCosine.setSelected(false);
 					rdbtnCosineSimilartiy.setSelected(false);
 					rdbtnLoglikelihood.setSelected(false);
 				}
@@ -176,7 +214,6 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 
 			public void actionPerformed(ActionEvent e) {
 				if (((JRadioButton) e.getSource()).isSelected()) {
-					rdbtnMyCosine.setSelected(false);
 					rdbtnCosineSimilartiy.setSelected(false);
 					rdbtnPearsonCor.setSelected(false);
 				}
@@ -186,8 +223,8 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 		panel_4.add(rdbtnLoglikelihood);
 
 		JPanel panel_8 = new JPanel();
-		panel_8.setBorder(new TitledBorder(null, "Profile Construction Method",
-				TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		panel_8.setBorder(new TitledBorder(null, "Profile Construction Method", TitledBorder.LEADING, TitledBorder.TOP,
+				null, null));
 		panel.add(panel_8);
 
 		rdbtnApproach2 = new JRadioButton("Approach 2");
@@ -221,9 +258,9 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 		panel_6.add(btnMakeRecommendaati);
 		btnMakeRecommendaati.setAction(action_2);
 
-		JButton btnNewButton = new JButton("New button");
-		btnNewButton.setAction(precisionrecallAction);
-		panel_6.add(btnNewButton);
+		JButton recPreButton = new JButton("New button");
+		recPreButton.setAction(precisionrecallAction);
+		panel_6.add(recPreButton);
 
 		JButton top5button = new JButton("New button");
 		top5button.setAction(top5ListAction);
@@ -237,27 +274,41 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 		panel_5.add(scrollingArea, BorderLayout.CENTER);
 		getContentPane().add(panel_5, BorderLayout.CENTER);
 
-		Vector<String> vecString = ItemFeature.getDistinctPredicates();
-
 		LinkedHashMap<String, Boolean> lhm = new LinkedHashMap<String, Boolean>();
-		for (int i = 0; i < vecString.size(); i++) {
-			lhm.put(vecString.get(i), true);
-		}
+		cl = new CheckBoxList<String>(lhm);
 
-		JPanel panel_7 = new JPanel();
+		panel_7 = new JPanel();
 		panel_2.add(panel_7);
 
 		btnSelectImportant = new JButton("Select important");
 		btnSelectImportant.setAction(selectImportantAction);
 		panel_7.add(btnSelectImportant);
-		cl = new CheckBoxList(lhm);
-		JScrollPane scrollList = new JScrollPane(cl);
-		panel_7.add(scrollList);
+		
+		deselectAllButton = new JButton("Select important");
+		deselectAllButton.setAction(new AbstractAction("None") {
+			
+			public void actionPerformed(ActionEvent arg0) {
+				cl.selectNone();
+			}
+		});
+		panel_7.add(deselectAllButton);
+		
+		selectAllButton = new JButton("All");
+		selectAllButton.setAction(new AbstractAction("All") {
+			
+			public void actionPerformed(ActionEvent arg0) {
+				cl.selectAll();
+			}
+		});
+		panel_7.add(selectAllButton);
+
+		scrollListFeatures = new JScrollPane(cl);
+		panel_7.add(scrollListFeatures);
 		setVisible(true);
 	}
 
 	public static void main(String[] args) {
-		gui = new RecommenderGUI();
+		new RecommenderGUI();
 	}
 
 	public void pushStatusMessage(String s) {
@@ -270,6 +321,7 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 	 * @author michael
 	 * 
 	 */
+	@SuppressWarnings("serial")
 	private class SwingAction extends AbstractAction {
 		public SwingAction() {
 			putValue(NAME, "Initialize");
@@ -278,23 +330,21 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 
 		public void actionPerformed(ActionEvent e) {
 			System.out.println("Action Button");
-			m.initializeDataSource("dbPedia");
+			if (rdbtnDbpedia.isSelected() && rdbtnWeighted.isSelected()) {
+				m.initializeDataSource(ItemFeature.DBPEDIA_WEIGHTED);
+			} else if (rdbtnDbpedia.isSelected() && rdbtnUnweighted.isSelected()) {
+				m.initializeDataSource(ItemFeature.DBPEDIA_UNWEIGHTED);
+			} else if (rdbtnFreebase.isSelected() && rdbtnWeighted.isSelected()) {
+				m.initializeDataSource(ItemFeature.FREEBASE_WEIGHTED);
+			} else if (rdbtnFreebase.isSelected() && rdbtnUnweighted.isSelected()) {
+				m.initializeDataSource(ItemFeature.FREEBASE_UNWEIGHTED);
+			}
 		}
 	}
 
 	private class SwingAction_1 extends AbstractAction {
 		public SwingAction_1() {
 			putValue(NAME, "dbpedia");
-			putValue(SHORT_DESCRIPTION, "Some short description");
-		}
-
-		public void actionPerformed(ActionEvent e) {
-		}
-	}
-
-	private class SwingAction_2 extends AbstractAction {
-		public SwingAction_2() {
-			putValue(NAME, "freebase");
 			putValue(SHORT_DESCRIPTION, "Some short description");
 		}
 
@@ -312,17 +362,17 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 		}
 
 		public void actionPerformed(ActionEvent e) {
-			getSelectedPredicateFilterValues();
+			Vector<String> predFilter = getSelectedPredicateFilterValues();
 			// m.makeRecommendation3(useridtextField.getText());
 			int weighted = getWeightedMethod();
 			int matching = getMatchingMethod();
 			int prof_construction_method = getProfileConstructionMethod();
+			int weightedUserProfile = getWeightesUserProfile();
 			/*
-			 * m.makeRecommendation(weighted, prof_construction_method,
-			 * matching, useridtextField.getText());
+			 * m.makeRecommendation(weighted, prof_construction_method, matching, useridtextField.getText());
 			 */
-			m.makesmallTestRecommendation(weighted, prof_construction_method,
-					matching, useridtextField.getText());
+			m.makesmallTestRecommendation(weighted, prof_construction_method, matching, weightedUserProfile,
+					useridtextField.getText(), predFilter);
 
 		}
 	}
@@ -336,19 +386,20 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 		}
 
 		public void actionPerformed(ActionEvent e) {
-			getSelectedPredicateFilterValues();
+			Vector<String> predFilter = getSelectedPredicateFilterValues();
 			// m.makeRecommendation3(useridtextField.getText());
 			try {
 				int weighted = getWeightedMethod();
 				int matching = getMatchingMethod();
 				int profcon = getProfileConstructionMethod();
-				m.determineTreshhold(weighted, profcon, matching);
+				int weightedUserProfile = getWeightesUserProfile();
+				m.determineTreshhold(weighted, profcon, matching, weightedUserProfile,
+						Integer.parseInt(textFieldMinSamePred.getText()), predFilter);
 			} catch (NumberFormatException nFE) {
 				System.out.println(nFE.getStackTrace());
 				pushStatusMessage("Input not a valid Integer");
 			}
 		}
-
 	}
 
 	private class Top5Action extends AbstractAction {
@@ -384,34 +435,55 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 
 		public void actionPerformed(ActionEvent arg0) {
 			Vector<String> filter = new Vector<String>();
-			filter.add("http://dbpedia.org/ontology/director");
-			filter.add("http://dbpedia.org/ontology/distributor");
-			filter.add("http://dbpedia.org/ontology/musicComposer");
-			filter.add("http://dbpedia.org/ontology/producer");
-			filter.add("http://dbpedia.org/ontology/starring");
-			filter.add("http://dbpedia.org/ontology/writer");
-			filter.add("http://dbpedia.org/ontology/editing");
-			filter.add("http://dbpedia.org/ontology/cinematography");
-			filter.add("http://dbpedia.org/ontology/country");
-			filter.add("http://dbpedia.org/property/director");
-			filter.add("http://dbpedia.org/property/distributor");
-			filter.add("http://dbpedia.org/property/music");
-			filter.add("http://dbpedia.org/property/producer");
-			filter.add("http://dbpedia.org/property/starring");
-			filter.add("http://dbpedia.org/property/studio");
-			filter.add("http://dbpedia.org/property/artist");
-			filter.add("http://dbpedia.org/property/genre");
-			filter.add("http://dbpedia.org/property/screenplay");
-			filter.add("http://dbpedia.org/property/story");
-			filter.add("http://dbpedia.org/property/state");
-			filter.add("http://dbpedia.org/property/allWriting");
-			filter.add("http://dbpedia.org/property/editing");
-			filter.add("http://dbpedia.org/property/writer");
-			filter.add("http://dbpedia.org/property/country");
-			filter.add("http://purl.org/dc/terms/subject");
-			filter.add("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+			if (rdbtnFreebase.isSelected()) {
+				filter.add("http://rdf.freebase.com/ns/media_common.netflix_title.netflix_genres");
+				filter.add("http://rdf.freebase.com/ns/film.film.genre");
+				filter.add("http://test.com#hasActor");
+				filter.add("http://rdf.freebase.com/ns/film.film.directed_by");
+				filter.add("http://rdf.freebase.com/ns/film.film.cinematography");
+				filter.add("http://rdf.freebase.com/ns/film.film.produced_by");
+				filter.add("http://rdf.freebase.com/ns/film.film.edited_by");
+				filter.add("http://rdf.freebase.com/ns/film.film.music");
+				filter.add("http://rdf.freebase.com/ns/film.film.subjects");
+				filter.add("http://rdf.freebase.com/ns/film.film.written_by");
+				filter.add("http://rdf.freebase.com/ns/film.film.executive_produced_by");
+				filter.add("http://rdf.freebase.com/ns/film.film.film_casting_director");
+				filter.add("http://rdf.freebase.com/ns/film.film.story_by");
+				filter.add("http://rdf.freebase.com/ns/film.film.film_production_design_by");
+				filter.add("http://rdf.freebase.com/ns/film.film.costume_design_by");
+				filter.add("http://rdf.freebase.com/ns/award.award_nominated_work.award_nominations");
+				filter.add("http://rdf.freebase.com/ns/film.film.soundtrack");
 
+			} else if (rdbtnDbpedia.isSelected()) {
+				filter.add("http://dbpedia.org/ontology/director");
+				filter.add("http://dbpedia.org/ontology/distributor");
+				filter.add("http://dbpedia.org/ontology/musicComposer");
+				filter.add("http://dbpedia.org/ontology/producer");
+				filter.add("http://dbpedia.org/ontology/starring");
+				filter.add("http://dbpedia.org/ontology/writer");
+				filter.add("http://dbpedia.org/ontology/editing");
+				filter.add("http://dbpedia.org/ontology/cinematography");
+				filter.add("http://dbpedia.org/ontology/country");
+				filter.add("http://dbpedia.org/property/director");
+				filter.add("http://dbpedia.org/property/distributor");
+				filter.add("http://dbpedia.org/property/music");
+				filter.add("http://dbpedia.org/property/producer");
+				filter.add("http://dbpedia.org/property/starring");
+				filter.add("http://dbpedia.org/property/studio");
+				filter.add("http://dbpedia.org/property/artist");
+				filter.add("http://dbpedia.org/property/genre");
+				filter.add("http://dbpedia.org/property/screenplay");
+				filter.add("http://dbpedia.org/property/story");
+				filter.add("http://dbpedia.org/property/state");
+				filter.add("http://dbpedia.org/property/allWriting");
+				filter.add("http://dbpedia.org/property/editing");
+				filter.add("http://dbpedia.org/property/writer");
+				filter.add("http://dbpedia.org/property/country");
+				filter.add("http://purl.org/dc/terms/subject");
+				filter.add("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+			}
 			cl.selectinVector(filter);
+			cl.repaint();
 		}
 	}
 
@@ -429,8 +501,6 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 			return Mediator.COSINE_SIM;
 		} else if (this.rdbtnLoglikelihood.isSelected()) {
 			return Mediator.LOGLIKELIHOOD_SIM;
-		} else if (this.rdbtnMyCosine.isSelected()) {
-			return Mediator.MYCOSINE_SIM;
 		} else if (this.rdbtnPearsonCor.isSelected()) {
 			return Mediator.PEARSON_SIM;
 		} else
@@ -462,5 +532,29 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 			}
 		}
 		return filter;
+	}
+
+	public int getWeightesUserProfile() {
+		if (rdbtnWeightedUserprofile.isSelected()) {
+			return Mediator.USER_PROFILE_WEIGHTED;
+		} else if (rdbtnUnweightedUserprofile.isSelected()) {
+			return Mediator.USER_PROFILE_UNWEIGHTED;
+		}
+		System.out.println("ERROR 1");
+		return -1;
+	}
+
+	public void putFeaturesInCheckBox(Vector<String> features) {
+		LinkedHashMap<String, Boolean> lhm = new LinkedHashMap<String, Boolean>();
+
+		for (int i = 0; i < features.size(); i++) {
+			lhm.put(features.get(i), true);
+		}
+
+		panel_7.remove(scrollListFeatures);
+
+		cl = new CheckBoxList<String>(lhm);
+		scrollListFeatures = new JScrollPane(cl);
+		panel_7.add(scrollListFeatures);
 	}
 }

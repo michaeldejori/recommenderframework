@@ -8,19 +8,16 @@ import java.util.Vector;
 import recommendation.itemfeature.UnweightedItemFeature;
 import recommendation.itemfeature.WeightedItemFeature;
 import bean.Rating;
-import bean.User;
 
 public class UserProfileContruction {
 
-	public static final double APPROACH_2_POS_TRESHHOLD = 3.5;
-	
+	public static final double APPROACH_2_POS_TRESHHOLD = 3;
+
 	/**
-	 * Approach 3 - Generating User Profiles from Ratings.To build the user pro
-	 * le [3] proposes the following: Let I be a set if items (N items) rated by
-	 * a user. Then the rating values are divided by 5 to get the scores between
-	 * 0 and 1. To measure the relevance of the different movie features they
-	 * sum up the weights of movies wm in which these features appear according
-	 * to the formula
+	 * Approach 3 - Generating User Profiles from Ratings.To build the user pro le [3] proposes the following: Let I be
+	 * a set if items (N items) rated by a user. Then the rating values are divided by 5 to get the scores between 0 and
+	 * 1. To measure the relevance of the different movie features they sum up the weights of movies wm in which these
+	 * features appear according to the formula
 	 * 
 	 * 
 	 * @param backData
@@ -30,8 +27,8 @@ public class UserProfileContruction {
 	 * @param idtoURIHashMap
 	 * @return
 	 */
-	public static HashMap<String, Double> approach3(Vector<Rating> backData,
-			Object ifM, int weighted, HashMap<String, String> idtoURIHashMap) {
+	public static HashMap<String, Double> approach3(Vector<Rating> backData, Object ifM, int weighted,
+			HashMap<Long, String> idtoURIHashMap) {
 		// hashmap that Collects the user Profile Data
 		HashMap<String, Double> hm_feature_value = new HashMap<String, Double>();
 		// if backGround Data is set
@@ -42,13 +39,11 @@ public class UserProfileContruction {
 				Rating r = backData.get(i);
 				Vector<String> featureVector = null;
 				if (weighted == Mediator.WEIGHTED) {
-					featureVector = ((WeightedItemFeature) ifM)
-							.getFeatureOfMovie(idtoURIHashMap.get(r
-									.getMovie_lensID()));
+					featureVector = ((WeightedItemFeature) ifM).getFeatureOfMovie(idtoURIHashMap.get(r
+							.getMovie_lensID()));
 				} else if (weighted == Mediator.UNWEIGHTED) {
-					featureVector = ((UnweightedItemFeature) ifM)
-							.getFeatureOfMovie(idtoURIHashMap.get(r
-									.getMovie_lensID()));
+					featureVector = ((UnweightedItemFeature) ifM).getFeatureOfMovie(idtoURIHashMap.get(r
+							.getMovie_lensID()));
 				}
 				// feature vecot kann null sein, wenn feature score für diesen
 				// Film nicht gefunden werden konnten
@@ -56,15 +51,12 @@ public class UserProfileContruction {
 					for (int j = 0; j < featureVector.size(); j++) {
 						// initialize feature in hashmap if not exists
 						if (!hm_feature_value.containsKey(featureVector.get(j))) {
-							hm_feature_value.put(featureVector.get(j)
-									.toString(), (double) 0);
+							hm_feature_value.put(featureVector.get(j).toString(), (double) 0);
 						}
 						// sum up the feature values
-						double a = hm_feature_value.get(featureVector.get(j)
-								.toString());
+						double a = hm_feature_value.get(featureVector.get(j).toString());
 						a += (r.getRating() / 5);
-						hm_feature_value.put(featureVector.get(j).toString(),
-								new Double(a));
+						hm_feature_value.put(featureVector.get(j).toString(), new Double(a));
 					}
 				}
 			}
@@ -78,48 +70,42 @@ public class UserProfileContruction {
 		return hm_feature_value;
 	}
 
-	public static HashMap<String, Double> approach2(Vector<Rating> backData,
-			Object ifM, int weighted, HashMap<String, String> idtoURIHashMap) {
+	public static HashMap<String, Double> approach2(Vector<Rating> backData, Object ifM, int weighted,
+			HashMap<Long, String> idtoURIHashMap) {
 		// hashmap that Collects the user Profile Data
 		HashMap<String, Double> hm_feature_value = new HashMap<String, Double>();
 		// if backGround Data is set
 		if (backData != null) {
-			
+
 			// count how many background data above trheshold rated, above n
 			int n = 0;
-			
+
 			// run through the background Data
 			for (int i = 0; i < backData.size(); i++) {
 				Rating r = backData.get(i);
+				n++;
 				// check if rating is above some positive Treshhold
 				if (r.getRating() >= UserProfileContruction.APPROACH_2_POS_TRESHHOLD) {
-					n++;
 					Vector<String> featureVector = null;
 					if (weighted == Mediator.WEIGHTED) {
-						featureVector = ((WeightedItemFeature) ifM)
-								.getFeatureOfMovie(idtoURIHashMap.get(r
-										.getMovie_lensID()));
+						featureVector = ((WeightedItemFeature) ifM).getFeatureOfMovie(idtoURIHashMap.get(r
+								.getMovie_lensID()));
 					} else if (weighted == Mediator.UNWEIGHTED) {
-						featureVector = ((UnweightedItemFeature) ifM)
-								.getFeatureOfMovie(idtoURIHashMap.get(r
-										.getMovie_lensID()));
+						featureVector = ((UnweightedItemFeature) ifM).getFeatureOfMovie(idtoURIHashMap.get(r
+								.getMovie_lensID()));
 					}
 					// feature vecot kann null sein, wenn feature score für
 					// diesen Film nicht gefunden werden konnten
 					if (featureVector != null) {
 						for (int j = 0; j < featureVector.size(); j++) {
 							// initialize feature in hashmap if not exists
-							if (!hm_feature_value.containsKey(featureVector
-									.get(j))) {
-								hm_feature_value.put(featureVector.get(j)
-										.toString(), (double) 0);
+							if (!hm_feature_value.containsKey(featureVector.get(j))) {
+								hm_feature_value.put(featureVector.get(j).toString(), (double) 0);
 							}
 							// sum up the feature values
-							double a = hm_feature_value.get(featureVector
-									.get(j).toString());
+							double a = hm_feature_value.get(featureVector.get(j).toString());
 							a += (r.getRating() / 5);
-							hm_feature_value.put(featureVector.get(j)
-									.toString(), new Double(a));
+							hm_feature_value.put(featureVector.get(j).toString(), new Double(a));
 						}
 					}
 				}
