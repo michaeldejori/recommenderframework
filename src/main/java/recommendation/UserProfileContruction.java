@@ -11,7 +11,7 @@ import bean.Rating;
 
 public class UserProfileContruction {
 
-	public static final double APPROACH_2_POS_TRESHHOLD = 3;
+	public static final double APPROACH_2_POS_TRESHHOLD = 3.5;
 
 	/**
 	 * Approach 3 - Generating User Profiles from Ratings.To build the user pro le [3] proposes the following: Let I be

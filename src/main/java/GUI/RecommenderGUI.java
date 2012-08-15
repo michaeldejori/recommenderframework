@@ -34,11 +34,13 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 	private JTextField useridtextField = null;
 	private JRadioButton rdbtnUnweighted = null;
 	private JRadioButton rdbtnWeighted = null;
+	private JRadioButton rdbtnCombUnWei = null;
 	private JRadioButton rdbtnWeightedUserprofile = null;
 	private JRadioButton rdbtnUnweightedUserprofile = null;
 	private JRadioButton rdbtnCosineSimilartiy = null;
-	private JRadioButton rdbtnPearsonCor = null;
-	private JRadioButton rdbtnLoglikelihood = null;
+	private JRadioButton rdbtnMyCosineI_00 = null;
+	private JRadioButton rdbtnMyCosineII_0 = null;
+	private JRadioButton rdbtnMyCosineIII_11 = null;
 	private JRadioButton rdbtnApproach2 = null;
 	private JRadioButton rdbtnApproach3 = null;
 	private JTextArea textArea_1 = null;
@@ -113,6 +115,7 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 			public void actionPerformed(ActionEvent e) {
 				if (((JRadioButton) e.getSource()).isSelected()) {
 					rdbtnWeighted.setSelected(false);
+					rdbtnCombUnWei.setSelected(false);
 				}
 
 			}
@@ -125,6 +128,21 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 			public void actionPerformed(ActionEvent e) {
 				if (((JRadioButton) e.getSource()).isSelected()) {
 					rdbtnUnweighted.setSelected(false);
+					rdbtnCombUnWei.setSelected(false);
+					
+				}
+
+			}
+		});
+		
+		rdbtnCombUnWei = new JRadioButton("Combined");
+		panel_1.add(rdbtnCombUnWei);
+		rdbtnCombUnWei.setAction(new AbstractAction("Combined") {
+
+			public void actionPerformed(ActionEvent e) {
+				if (((JRadioButton) e.getSource()).isSelected()) {
+					rdbtnUnweighted.setSelected(false);
+					rdbtnWeighted.setSelected(false);
 				}
 
 			}
@@ -188,39 +206,56 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 
 			public void actionPerformed(ActionEvent e) {
 				if (((JRadioButton) e.getSource()).isSelected()) {
-					rdbtnPearsonCor.setSelected(false);
-					rdbtnLoglikelihood.setSelected(false);
+					rdbtnMyCosineI_00.setSelected(false);
+					rdbtnMyCosineII_0.setSelected(false);
+					rdbtnMyCosineIII_11.setSelected(false);
 				}
 
 			}
 		});
 		panel_4.add(rdbtnCosineSimilartiy);
 
-		rdbtnPearsonCor = new JRadioButton("Pearson Cor");
-		rdbtnPearsonCor.setAction(new AbstractAction("Pearson Cor (mahout)") {
+		rdbtnMyCosineI_00 = new JRadioButton("MyCosine I(00)");
+		rdbtnMyCosineI_00.setAction(new AbstractAction("MyCosine I(00)") {
 
 			public void actionPerformed(ActionEvent e) {
 				if (((JRadioButton) e.getSource()).isSelected()) {
 					rdbtnCosineSimilartiy.setSelected(false);
-					rdbtnLoglikelihood.setSelected(false);
+					rdbtnMyCosineII_0.setSelected(false);
+					rdbtnMyCosineIII_11.setSelected(false);
 				}
 
 			}
 		});
-		panel_4.add(rdbtnPearsonCor);
+		panel_4.add(rdbtnMyCosineI_00);
 
-		rdbtnLoglikelihood = new JRadioButton("Loglikelihood");
-		rdbtnLoglikelihood.setAction(new AbstractAction("Loglikelihood") {
+		rdbtnMyCosineII_0 = new JRadioButton("MyCosine II (O)");
+		rdbtnMyCosineII_0.setAction(new AbstractAction("MyCosine II (O)") {
 
 			public void actionPerformed(ActionEvent e) {
 				if (((JRadioButton) e.getSource()).isSelected()) {
 					rdbtnCosineSimilartiy.setSelected(false);
-					rdbtnPearsonCor.setSelected(false);
+					rdbtnMyCosineI_00.setSelected(false);
+					rdbtnMyCosineIII_11.setSelected(false);
 				}
 
 			}
 		});
-		panel_4.add(rdbtnLoglikelihood);
+		panel_4.add(rdbtnMyCosineII_0);
+		
+		rdbtnMyCosineIII_11 = new JRadioButton("MyCosine III (11)");
+		rdbtnMyCosineIII_11.setAction(new AbstractAction("MyCosine III (11)") {
+
+			public void actionPerformed(ActionEvent e) {
+				if (((JRadioButton) e.getSource()).isSelected()) {
+					rdbtnCosineSimilartiy.setSelected(false);
+					rdbtnMyCosineI_00.setSelected(false);
+					rdbtnMyCosineII_0.setSelected(false);
+				}
+
+			}
+		});
+		panel_4.add(rdbtnMyCosineIII_11);
 
 		JPanel panel_8 = new JPanel();
 		panel_8.setBorder(new TitledBorder(null, "Profile Construction Method", TitledBorder.LEADING, TitledBorder.TOP,
@@ -265,6 +300,29 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 		JButton top5button = new JButton("New button");
 		top5button.setAction(top5ListAction);
 		panel_6.add(top5button);
+		
+		JButton signTest = new JButton("New button");
+		panel_6.add(signTest);
+		signTest.setAction(new AbstractAction("SignTest") {
+
+			public void actionPerformed(ActionEvent e) {
+				Vector<String> predFilter = getSelectedPredicateFilterValues();
+				// m.makeRecommendation3(useridtextField.getText());
+				try {
+					int weighted = getWeightedMethod();
+					int matching = getMatchingMethod();
+					int profcon = getProfileConstructionMethod();
+					int weightedUserProfile = getWeightesUserProfile();
+					m.signTest(weighted, profcon, matching, weightedUserProfile,
+							Integer.parseInt(textFieldMinSamePred.getText()), predFilter);		
+					
+				} catch (NumberFormatException nFE) {
+					System.out.println(nFE.getStackTrace());
+					pushStatusMessage("Input not a valid Integer");
+				}
+
+			}
+		});
 
 		textArea_1 = new JTextArea();
 		// panel_5.add(textArea_1, BorderLayout.CENTER);
@@ -334,10 +392,14 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 				m.initializeDataSource(ItemFeature.DBPEDIA_WEIGHTED);
 			} else if (rdbtnDbpedia.isSelected() && rdbtnUnweighted.isSelected()) {
 				m.initializeDataSource(ItemFeature.DBPEDIA_UNWEIGHTED);
+			} else if (rdbtnDbpedia.isSelected() && rdbtnCombUnWei.isSelected()) {
+				m.initializeDataSource(ItemFeature.DBPEDIA_COMB_WEI_UNW);
 			} else if (rdbtnFreebase.isSelected() && rdbtnWeighted.isSelected()) {
 				m.initializeDataSource(ItemFeature.FREEBASE_WEIGHTED);
 			} else if (rdbtnFreebase.isSelected() && rdbtnUnweighted.isSelected()) {
 				m.initializeDataSource(ItemFeature.FREEBASE_UNWEIGHTED);
+			} else if (rdbtnFreebase.isSelected() && rdbtnCombUnWei.isSelected()) {
+				m.initializeDataSource(ItemFeature.FREEBASE_COMB_WEI_UNW);
 			}
 		}
 	}
@@ -406,18 +468,21 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 		private static final long serialVersionUID = 1L;
 
 		public Top5Action() {
-			putValue(NAME, "Top 5");
+			putValue(NAME, "Spearman Corr");
 			putValue(SHORT_DESCRIPTION, "Some short description");
 		}
 
 		public void actionPerformed(ActionEvent e) {
-			getSelectedPredicateFilterValues();
+			Vector<String> predFilter = getSelectedPredicateFilterValues();
 			// m.makeRecommendation3(useridtextField.getText());
 			try {
 				int weighted = getWeightedMethod();
 				int matching = getMatchingMethod();
 				int profcon = getProfileConstructionMethod();
-				m.top5list(weighted, profcon, matching);
+				int weightedUserProfile = getWeightesUserProfile();
+				m.spearmanCorrelation(weighted, profcon, matching, weightedUserProfile,
+						Integer.parseInt(textFieldMinSamePred.getText()), predFilter);		
+				
 			} catch (NumberFormatException nFE) {
 				System.out.println(nFE.getStackTrace());
 				pushStatusMessage("Input not a valid Integer");
@@ -499,10 +564,12 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 	public int getMatchingMethod() {
 		if (this.rdbtnCosineSimilartiy.isSelected()) {
 			return Mediator.COSINE_SIM;
-		} else if (this.rdbtnLoglikelihood.isSelected()) {
-			return Mediator.LOGLIKELIHOOD_SIM;
-		} else if (this.rdbtnPearsonCor.isSelected()) {
-			return Mediator.PEARSON_SIM;
+		} else if (this.rdbtnMyCosineII_0.isSelected()) {
+			return Mediator.MYCOSINEII_0;
+		} else if (this.rdbtnMyCosineI_00.isSelected()) {
+			return Mediator.MYCOSINEI_00;
+		} else if (this.rdbtnMyCosineIII_11.isSelected()) {
+			return Mediator.MYCOSINEIII_11;
 		} else
 			return -1;
 	}
@@ -549,6 +616,7 @@ public class RecommenderGUI extends JFrame implements MassageListener {
 
 		for (int i = 0; i < features.size(); i++) {
 			lhm.put(features.get(i), true);
+			System.out.println(features.get(i));
 		}
 
 		panel_7.remove(scrollListFeatures);

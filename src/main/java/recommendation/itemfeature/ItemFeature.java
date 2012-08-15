@@ -7,8 +7,11 @@ public class ItemFeature {
 
 	public static final String DBPEDIA_UNWEIGHTED = "1";
 	public static final String DBPEDIA_WEIGHTED = "3";
+	public static final String DBPEDIA_COMB_WEI_UNW = "6";
 	public static final String FREEBASE_UNWEIGHTED = "2";
 	public static final String FREEBASE_WEIGHTED = "4";
+	public static final String FREEBASE_COMB_WEI_UNW = "5";
+	
 
 	public static String movieDBPediaPredicatesFile = "files/moviePredicatesDBPedia.dat";
 	// file moviePredicates, movieURI predicate object

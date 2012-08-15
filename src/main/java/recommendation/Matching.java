@@ -1,10 +1,13 @@
 package recommendation;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.Vector;
 
 import org.apache.mahout.cf.taste.common.NoSuchUserException;
@@ -22,25 +25,172 @@ import bean.Rating;
 
 public class Matching {
 
-	public static void CosineSimilarity(HashMap<String, Double> userProfile,
-			HashMap<String, String> idtoURIHashMap, Vector<Rating> ratings,
-			ItemFeature iF, RecommenderGUI gui) {
+	/**
+	 * my own cosine similarity: mahout is very slow when putting the 0 in the file, therefore try my own implementation
+	 * 
+	 * ACHTUNG implementierung: wenn feature nicht vorkommt in user Profile, dann nicht ignorieren sondern 0
+	 * entspricht wenn ich mahout überall 0 welches nicht vorkommt
+	 * 
+	 * @param ratingsToEstimate
+	 * @param gui
+	 * @param idtoURIHashMap
+	 * @param scoreTreshhold
+	 * @param iF
+	 * @param userProfile
+	 * @param minSamePredicates
+	 * @return
+	 */
+	public static Vector<Long> calculateMyCosineSimReturn(Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
+			HashMap<Long, String> idtoURIHashMap, double scoreTreshhold, ItemFeature iF,
+			HashMap<String, Double> userProfile, int minSamePredicates, int weightedUserProfile) {
+		
+		Vector<Long> vecint = new Vector<Long>();
+		
+		for (int i = 0; i < ratingsToEstimate.size(); i++) {
+			// compute the dot product
+			double sumDotProduct = 0;
+			double score = 0;
+			String movieURI = idtoURIHashMap.get(ratingsToEstimate.get(i).getMovie_lensID());		
+			
+			Vector<String> movieFeatures = iF.getFeatureOfMovie(movieURI);
+
+			if (movieFeatures != null) {
+				// dot product multiply same features
+				for (int j = 0; j < movieFeatures.size(); j++) {
+					String f = movieFeatures.get(j);
+					if (userProfile.containsKey(f)) {
+						if (weightedUserProfile == Mediator.USER_PROFILE_WEIGHTED)
+							sumDotProduct += userProfile.get(f) * iF.getScoreOf(movieURI, f);
+						else if (weightedUserProfile == Mediator.USER_PROFILE_UNWEIGHTED)
+							sumDotProduct += 1 * iF.getScoreOf(movieURI, f);
+					}
+				}
+
+				// compute ||A|| A[1]*A[1] + A[2]*A[2] + .... dann noch wurzel
+				double betragA = 0;
+				Collection<Double> c = userProfile.values();
+				for (Iterator<Double> it = c.iterator(); it.hasNext();) {
+					double value = it.next();
+					if (weightedUserProfile == Mediator.USER_PROFILE_WEIGHTED)
+						betragA += value * value;
+					else if (weightedUserProfile == Mediator.USER_PROFILE_UNWEIGHTED)
+						betragA += 1 * 1;
+				}
+
+				// compute ||B|| B[1]*B[1] + B[2]*B[2] + .... dann noch wurzel
+				double betragB = 0;
+				for (int k = 0; k < movieFeatures.size(); k++) {
+					String feature = movieFeatures.get(k);
+
+					double value = iF.getScoreOf(movieURI, feature);
+					betragB += value * value;
+				}
+
+
+				// compute cosine similarity of the parts
+				score = sumDotProduct / (Math.sqrt(betragA) * Math.sqrt(betragB));
+				if (score > scoreTreshhold) {
+					vecint.add(ratingsToEstimate.get(i).getMovie_lensID());
+				}
+			}
+		}
+		return vecint;
+	}
+
+
+	/**
+	 * my own cosine similarity II: another version
+	 * 
+	 * ACHTUNG implementierung: entspricht dass wenn feature in
+	 * user profile nicht vorkommt, dann weiss man nicht ob er es mag oder
+	 * nicht. daher wird bei movie ausummieren unter dem bruch dann nicht berücksichtigt
+	 * 
+	 * @param ratingsToEstimate
+	 * @param gui
+	 * @param idtoURIHashMap
+	 * @param scoreTreshhold
+	 * @param iF
+	 * @param userProfile
+	 * @param minSamePredicates
+	 * @return
+	 */
+	public static Vector<Long> calculateMyCosineSimReturn2(Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
+			HashMap<Long, String> idtoURIHashMap, double scoreTreshhold, ItemFeature iF,
+			HashMap<String, Double> userProfile, int minSamePredicates, int weightedUserProfile ) {
+		
+		Vector<Long> vecint = new Vector<Long>();
+
+		
+		for (int i = 0; i < ratingsToEstimate.size(); i++) {
+			// compute the dot product
+			double sumDotProduct = 0;
+			double score = 0;
+			String movieURI = idtoURIHashMap.get(ratingsToEstimate.get(i).getMovie_lensID());
+			
+			Vector<String> movieFeatures = iF.getFeatureOfMovie(movieURI);
+
+			if (movieFeatures != null) {
+				// dot product multiply same features
+				for (int j = 0; j < movieFeatures.size(); j++) {
+					String f = movieFeatures.get(j);
+					if (userProfile.containsKey(f)) {
+						if (weightedUserProfile == Mediator.USER_PROFILE_WEIGHTED)
+							sumDotProduct += userProfile.get(f) * iF.getScoreOf(movieURI, f);
+						else if (weightedUserProfile == Mediator.USER_PROFILE_UNWEIGHTED)
+							sumDotProduct += 1 * iF.getScoreOf(movieURI, f);
+					}
+				}
+
+				// compute ||A|| A[1]*A[1] + A[2]*A[2] + .... dann noch wurzel
+				double betragA = 0;
+				Collection<Double> c = userProfile.values();
+				for (Iterator<Double> it = c.iterator(); it.hasNext();) {
+					double value = it.next();
+					if (weightedUserProfile == Mediator.USER_PROFILE_WEIGHTED)
+						betragA += value * value;
+					else if (weightedUserProfile == Mediator.USER_PROFILE_UNWEIGHTED)
+						betragA += 1 * 1;
+				}
+
+				// compute ||B|| B[1]*B[1] + B[2]*B[2] + .... dann noch wurzel
+				double betragB = 0;
+				for (int k = 0; k < movieFeatures.size(); k++) {
+					String feature = movieFeatures.get(k);
+
+					// wenn 1 in movie, dann betrachte ich nur falls auch in profile vorkommt
+					if (userProfile.containsKey(feature)) {
+						double value = iF.getScoreOf(movieURI, feature);
+						betragB += value * value;
+					}
+				}
+
+				score = sumDotProduct / (Math.sqrt(betragA) * Math.sqrt(betragB));
+				//System.out.println(score);
+				if (score > scoreTreshhold) {
+					vecint.add(ratingsToEstimate.get(i).getMovie_lensID());
+				}
+			}
+		}
+		return vecint;
+	}
+	
+	
+	
+	public static void CosineSimilarity(HashMap<String, Double> userProfile, HashMap<String, String> idtoURIHashMap,
+			Vector<Rating> ratings, ItemFeature iF, RecommenderGUI gui) {
 
 		for (int i = 0; i < ratings.size(); i++) {
 			// compute dot Product
 			double sumDotProduct = 0;
 			double score = 0;
-			String movieURI = idtoURIHashMap.get(ratings.get(i)
-					.getMovie_lensID());
+			String movieURI = idtoURIHashMap.get(ratings.get(i).getMovie_lensID());
 			Vector<String> movieFeatures = iF.getFeatureOfMovie(movieURI);
 			// dot product multiply same features
 			if (movieFeatures != null) {
 				for (int j = 0; j < movieFeatures.size(); j++) {
 					String f = movieFeatures.get(j);
 					if (userProfile.containsKey(f)) {
-						System.out.println(f + "is a common feature");
-						sumDotProduct += userProfile.get(f)
-								* iF.getScoreOf(movieURI, f);
+						sumDotProduct += userProfile.get(f) * iF.getScoreOf(movieURI, f);
 					}
 				}
 				// compute ||A|| A[1]*A[1] + A[2]*A[2] + .... dann noch wurzel
@@ -62,16 +212,14 @@ public class Matching {
 			}
 
 			System.out.println("asdasdsadasdsadasdasdasdasd");
-			String toDisplay = idtoURIHashMap.get(ratings.get(i)
-					.getMovie_lensID());
-			toDisplay += "(" + ratings.get(i).getMovie_lensID() + ") Score: "
-					+ score + " (Rating " + ratings.get(i).getRating() + ")\n";
+			String toDisplay = idtoURIHashMap.get(ratings.get(i).getMovie_lensID());
+			toDisplay += "(" + ratings.get(i).getMovie_lensID() + ") Score: " + score + " (Rating "
+					+ ratings.get(i).getRating() + ")\n";
 			gui.newMessage(toDisplay);
 		}
 	}
 
-	public static void calculateMahoutUncenteredCosineSim(
-			Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
+	public static void calculateMahoutUncenteredCosineSim(Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
 			HashMap<Long, String> idtoURIHashMap) {
 		DataModel model;
 		try {
@@ -80,17 +228,14 @@ public class Matching {
 			UserSimilarity usersim = new UncenteredCosineSimilarity(model);
 			gui.newMessage("\n\nMahout Uncentered Cosine Similarity:\n");
 			for (int i = 0; i < ratingsToEstimate.size(); i++) {
-				double score = usersim.userSimilarity(new Long(
-						ratingsToEstimate.get(i).getMovie_lensID()), 9999999);
-				String toDisplay = idtoURIHashMap.get(ratingsToEstimate.get(i)
-						.getMovie_lensID());
-				toDisplay += "(" + ratingsToEstimate.get(i).getMovie_lensID()
-						+ ") Score: " + score + " (Rating "
+				double score = usersim.userSimilarity(new Long(ratingsToEstimate.get(i).getMovie_lensID()), 9999999);
+				String toDisplay = idtoURIHashMap.get(ratingsToEstimate.get(i).getMovie_lensID());
+				toDisplay += "(" + ratingsToEstimate.get(i).getMovie_lensID() + ") Score: " + score + " (Rating "
 						+ ratingsToEstimate.get(i).getRating() + ")\n";
 				gui.newMessage(toDisplay);
 			}
 		} catch (NoSuchUserException e) {
-			
+
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -100,8 +245,7 @@ public class Matching {
 		}
 	}
 
-	public static void calculateMahoutPearsonCorSim(
-			Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
+	public static void calculateMahoutPearsonCorSim(Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
 			HashMap<Long, String> idtoURIHashMap) {
 		DataModel model;
 		try {
@@ -111,16 +255,13 @@ public class Matching {
 			gui.newMessage("\n\nMahout Pearson Correlation Similarity:\n");
 			for (int i = 0; i < ratingsToEstimate.size(); i++) {
 				System.out.println("Ich bin hier");
-				double score = usersim.userSimilarity(new Long(
-						ratingsToEstimate.get(i).getMovie_lensID()), 9999999);
+				double score = usersim.userSimilarity(new Long(ratingsToEstimate.get(i).getMovie_lensID()), 9999999);
 				System.out.println(score);
 				score = (score + 1) / 2;
 				System.out.println(score);
 				String toDisplay = "";
-				toDisplay += idtoURIHashMap.get(ratingsToEstimate.get(i)
-						.getMovie_lensID());
-				toDisplay += "(" + ratingsToEstimate.get(i).getMovie_lensID()
-						+ ") Score: " + score + " (Rating "
+				toDisplay += idtoURIHashMap.get(ratingsToEstimate.get(i).getMovie_lensID());
+				toDisplay += "(" + ratingsToEstimate.get(i).getMovie_lensID() + ") Score: " + score + " (Rating "
 						+ ratingsToEstimate.get(i).getRating() + ")\n";
 				gui.newMessage(toDisplay);
 			}
@@ -133,8 +274,7 @@ public class Matching {
 		}
 	}
 
-	public static void calculateMahoutLogLikelihoodSim(
-			Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
+	public static void calculateMahoutLogLikelihoodSim(Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
 			HashMap<Long, String> idtoURIHashMap) {
 		DataModel model;
 		try {
@@ -143,12 +283,9 @@ public class Matching {
 			UserSimilarity usersim = new LogLikelihoodSimilarity(model);
 			gui.newMessage("\n\nMahout Loglikelihood Similarity:\n");
 			for (int i = 0; i < ratingsToEstimate.size(); i++) {
-				double score = usersim.userSimilarity(new Long(
-						ratingsToEstimate.get(i).getMovie_lensID()), 9999999);
-				String toDisplay = idtoURIHashMap.get(ratingsToEstimate.get(i)
-						.getMovie_lensID());
-				toDisplay += "(" + ratingsToEstimate.get(i).getMovie_lensID()
-						+ ") Score: " + score + " (Rating "
+				double score = usersim.userSimilarity(new Long(ratingsToEstimate.get(i).getMovie_lensID()), 9999999);
+				String toDisplay = idtoURIHashMap.get(ratingsToEstimate.get(i).getMovie_lensID());
+				toDisplay += "(" + ratingsToEstimate.get(i).getMovie_lensID() + ") Score: " + score + " (Rating "
 						+ ratingsToEstimate.get(i).getRating() + ")\n";
 				gui.newMessage(toDisplay);
 			}
@@ -159,26 +296,23 @@ public class Matching {
 		}
 	}
 
-	public static Vector<Long> calculateMyCosineSimReturn(
-			Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
-			HashMap<Long, String> idtoURIHashMap, double scoreTreshhold,
-			ItemFeature iF, HashMap<String, Double> userProfile) {
-		
+	public static Vector<Long> calculateMyCosineSimReturnOLD(Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
+			HashMap<Long, String> idtoURIHashMap, double scoreTreshhold, ItemFeature iF,
+			HashMap<String, Double> userProfile) {
+
 		Vector<Long> vecint = new Vector<Long>();
 		for (int i = 0; i < ratingsToEstimate.size(); i++) {
 			// compute dot Product
 			double sumDotProduct = 0;
 			double score = 0;
-			String movieURI = idtoURIHashMap.get(ratingsToEstimate.get(i)
-					.getMovie_lensID());
+			String movieURI = idtoURIHashMap.get(ratingsToEstimate.get(i).getMovie_lensID());
 			Vector<String> movieFeatures = iF.getFeatureOfMovie(movieURI);
 			// dot product multiply same features
 			if (movieFeatures != null) {
 				for (int j = 0; j < movieFeatures.size(); j++) {
 					String f = movieFeatures.get(j);
 					if (userProfile.containsKey(f)) {
-						sumDotProduct += userProfile.get(f)
-								* iF.getScoreOf(movieURI, f);
+						sumDotProduct += userProfile.get(f) * iF.getScoreOf(movieURI, f);
 					}
 				}
 				// compute ||A|| A[1]*A[1] + A[2]*A[2] + .... dann noch wurzel
@@ -197,19 +331,17 @@ public class Matching {
 					sb += value * value;
 				}
 				score = sumDotProduct / (Math.sqrt(sc) * Math.sqrt(sb));
-				if (score > scoreTreshhold){
-					vecint.add(ratingsToEstimate
-							.get(i).getMovie_lensID());
+				if (score > scoreTreshhold) {
+					vecint.add(ratingsToEstimate.get(i).getMovie_lensID());
 				}
 			}
 		}
 		return vecint;
 	}
-	
-	public static Vector<Long> calculateMahoutUncenteredCosineSimReturn(
-			Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
-			HashMap<Long, String> idtoURIHashMap, double scoreTreshhold,
-			ItemFeature iF, HashMap<String, Double> userProfile, int minSamePredicates) {
+
+	public static Vector<Long> calculateMahoutUncenteredCosineSimReturn(Vector<Rating> ratingsToEstimate,
+			RecommenderGUI gui, HashMap<Long, String> idtoURIHashMap, double scoreTreshhold, ItemFeature iF,
+			HashMap<String, Double> userProfile, int minSamePredicates) {
 		Vector<Long> vecint = new Vector<Long>();
 		DataModel model;
 		try {
@@ -219,30 +351,21 @@ public class Matching {
 			for (int i = 0; i < ratingsToEstimate.size(); i++) {
 				if (minSamePredicates > 0) {
 					// check if enough common Predicates
-					String movie1URI = idtoURIHashMap.get(ratingsToEstimate
-							.get(i).getMovie_lensID());
-					int comPredicates = iF.getCommonPredicates(movie1URI,
-							userProfile.keySet());
+					String movie1URI = idtoURIHashMap.get(ratingsToEstimate.get(i).getMovie_lensID());
+					int comPredicates = iF.getCommonPredicates(movie1URI, userProfile.keySet());
 					if (comPredicates >= minSamePredicates) {
 						try {
-							double score = usersim.userSimilarity(
-									new Long(ratingsToEstimate.get(i)
-											.getMovie_lensID()), 9999999);
-							
-							
+							double score = usersim.userSimilarity(new Long(ratingsToEstimate.get(i).getMovie_lensID()),
+									9999999);
+
 							/** print scores **/
 							if (Mediator.smallUserstoTest) {
-								System.out
-										.println("Score estimated Treshhold : "
-												+ scoreTreshhold
-												+ " Movie("
-												+ ratingsToEstimate.get(i).getMovie_lensID()
-												+ ")    ScoreCalc:" + score);
+								System.out.println("Score estimated Treshhold : " + scoreTreshhold + " Movie("
+										+ ratingsToEstimate.get(i).getMovie_lensID() + ")    ScoreCalc:" + score);
 
 							}
 							if (score > scoreTreshhold) {
-								vecint.add(ratingsToEstimate
-										.get(i).getMovie_lensID());
+								vecint.add(ratingsToEstimate.get(i).getMovie_lensID());
 							}
 						} catch (NoSuchUserException e) {
 
@@ -253,24 +376,19 @@ public class Matching {
 					}
 				} else {
 					try {
-						double score = usersim.userSimilarity(new Long(
-								ratingsToEstimate.get(i).getMovie_lensID()),
+						double score = usersim.userSimilarity(new Long(ratingsToEstimate.get(i).getMovie_lensID()),
 								9999999);
 						/** print scores **/
 						if (Mediator.smallUserstoTest) {
-							System.out
-									.println("Score estimated Treshhold : "
-											+ scoreTreshhold
-											+ " Movie("
-											+ ratingsToEstimate.get(i).getMovie_lensID()
-											+ ")    ScoreCalc:" + score);
+							System.out.println("Score estimated Treshhold : " + scoreTreshhold + " Movie("
+									+ ratingsToEstimate.get(i).getMovie_lensID() + ")    ScoreCalc:" + score);
 
 						}
+
 						if (score > scoreTreshhold) {
-							vecint.add(ratingsToEstimate
-									.get(i).getMovie_lensID());
+							vecint.add(ratingsToEstimate.get(i).getMovie_lensID());
 						}
-						
+
 					} catch (NoSuchUserException e) {
 
 					}
@@ -286,10 +404,9 @@ public class Matching {
 		return vecint;
 	}
 
-	public static Vector<Long> calculateMahoutPearsonCorSimReturn(
-			Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
-			HashMap<Long, String> idtoURIHashMap, double scoreTreshhold,
-			ItemFeature iF, HashMap<String, Double> userProfile, int minSamePredicates) {
+	public static Vector<Long> calculateMahoutPearsonCorSimReturn(Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
+			HashMap<Long, String> idtoURIHashMap, double scoreTreshhold, ItemFeature iF,
+			HashMap<String, Double> userProfile, int minSamePredicates) {
 		Vector<Long> vecint = new Vector<Long>();
 		DataModel model;
 		try {
@@ -300,30 +417,22 @@ public class Matching {
 			for (int i = 0; i < ratingsToEstimate.size(); i++) {
 				if (minSamePredicates > 0) {
 					// check if enough common Predicates
-					String movie1URI = idtoURIHashMap.get(ratingsToEstimate
-							.get(i).getMovie_lensID());
-					int comPredicates = iF.getCommonPredicates(movie1URI,
-							userProfile.keySet());
+					String movie1URI = idtoURIHashMap.get(ratingsToEstimate.get(i).getMovie_lensID());
+					int comPredicates = iF.getCommonPredicates(movie1URI, userProfile.keySet());
 					if (comPredicates >= minSamePredicates) {
 						try {
-							double score = usersim.userSimilarity(
-									new Long(ratingsToEstimate.get(i)
-											.getMovie_lensID()), 9999999);
+							double score = usersim.userSimilarity(new Long(ratingsToEstimate.get(i).getMovie_lensID()),
+									9999999);
 							score = (score + 1) / 2;
 							/** print scores **/
 							if (Mediator.smallUserstoTest) {
-								System.out
-										.println("Score estimated Treshhold : "
-												+ scoreTreshhold
-												+ " Movie("
-												+ ratingsToEstimate.get(i).getMovie_lensID()
-												+ ")    ScoreCalc:" + score);
+								System.out.println("Score estimated Treshhold : " + scoreTreshhold + " Movie("
+										+ ratingsToEstimate.get(i).getMovie_lensID() + ")    ScoreCalc:" + score);
 
 							}
-							
+
 							if (score > scoreTreshhold) {
-								vecint.add(ratingsToEstimate
-										.get(i).getMovie_lensID());
+								vecint.add(ratingsToEstimate.get(i).getMovie_lensID());
 							}
 						} catch (NoSuchUserException e) {
 
@@ -331,22 +440,16 @@ public class Matching {
 					}
 				} else {
 					try {
-						double score = usersim.userSimilarity(new Long(
-								ratingsToEstimate.get(i).getMovie_lensID()),
+						double score = usersim.userSimilarity(new Long(ratingsToEstimate.get(i).getMovie_lensID()),
 								9999999);
 						/** print scores **/
 						if (Mediator.smallUserstoTest) {
-							System.out
-									.println("Score estimated Treshhold : "
-											+ scoreTreshhold
-											+ " Movie("
-											+ ratingsToEstimate.get(i).getMovie_lensID()
-											+ ")    ScoreCalc:" + score);
+							System.out.println("Score estimated Treshhold : " + scoreTreshhold + " Movie("
+									+ ratingsToEstimate.get(i).getMovie_lensID() + ")    ScoreCalc:" + score);
 
 						}
 						if (score > scoreTreshhold) {
-							vecint.add(ratingsToEstimate
-									.get(i).getMovie_lensID());
+							vecint.add(ratingsToEstimate.get(i).getMovie_lensID());
 						}
 					} catch (NoSuchUserException e) {
 
@@ -363,10 +466,9 @@ public class Matching {
 		return vecint;
 	}
 
-	public static Vector<Long> calculateMahoutLogLikelihoodSimReturn(
-			Vector<Rating> ratingsToEstimate, RecommenderGUI gui,
-			HashMap<Long, String> idtoURIHashMap, double scoreTreshhold,
-			ItemFeature iF, HashMap<String, Double> userProfile, int minSamePredicates) {
+	public static Vector<Long> calculateMahoutLogLikelihoodSimReturn(Vector<Rating> ratingsToEstimate,
+			RecommenderGUI gui, HashMap<Long, String> idtoURIHashMap, double scoreTreshhold, ItemFeature iF,
+			HashMap<String, Double> userProfile, int minSamePredicates) {
 		Vector<Long> vecint = new Vector<Long>();
 		DataModel model;
 		try {
@@ -376,31 +478,23 @@ public class Matching {
 			for (int i = 0; i < ratingsToEstimate.size(); i++) {
 				if (minSamePredicates > 0) {
 					// check if enough common Predicates
-					String movie1URI = idtoURIHashMap.get(ratingsToEstimate
-							.get(i).getMovie_lensID());
-					int comPredicates = iF.getCommonPredicates(movie1URI,
-							userProfile.keySet());
+					String movie1URI = idtoURIHashMap.get(ratingsToEstimate.get(i).getMovie_lensID());
+					int comPredicates = iF.getCommonPredicates(movie1URI, userProfile.keySet());
 					if (comPredicates >= minSamePredicates) {
-						
+
 						try {
-							double score = usersim.userSimilarity(
-									new Long(ratingsToEstimate.get(i)
-											.getMovie_lensID()), 9999999);
+							double score = usersim.userSimilarity(new Long(ratingsToEstimate.get(i).getMovie_lensID()),
+									9999999);
 
 							/** print scores **/
 							if (Mediator.smallUserstoTest) {
-								System.out
-										.println("Score estimated Treshhold : "
-												+ scoreTreshhold
-												+ " Movie("
-												+ ratingsToEstimate.get(i).getMovie_lensID()
-												+ ")    ScoreCalc:" + score);
+								System.out.println("Score estimated Treshhold : " + scoreTreshhold + " Movie("
+										+ ratingsToEstimate.get(i).getMovie_lensID() + ")    ScoreCalc:" + score);
 
 							}
 
 							if (score > scoreTreshhold) {
-								vecint.add(ratingsToEstimate
-										.get(i).getMovie_lensID());
+								vecint.add(ratingsToEstimate.get(i).getMovie_lensID());
 							}
 						} catch (NoSuchUserException e) {
 
@@ -409,24 +503,18 @@ public class Matching {
 					}
 				} else {
 					try {
-						double score = usersim.userSimilarity(new Long(
-								ratingsToEstimate.get(i).getMovie_lensID()),
+						double score = usersim.userSimilarity(new Long(ratingsToEstimate.get(i).getMovie_lensID()),
 								9999999);
-						
+
 						/** print scores **/
 						if (Mediator.smallUserstoTest) {
-							System.out
-									.println("Score estimated Treshhold : "
-											+ scoreTreshhold
-											+ " Movie("
-											+ ratingsToEstimate.get(i).getMovie_lensID()
-											+ ")    ScoreCalc:" + score);
+							System.out.println("Score estimated Treshhold : " + scoreTreshhold + " Movie("
+									+ ratingsToEstimate.get(i).getMovie_lensID() + ")    ScoreCalc:" + score);
 
 						}
-						
+
 						if (score > scoreTreshhold) {
-							vecint.add(ratingsToEstimate
-									.get(i).getMovie_lensID());
+							vecint.add(ratingsToEstimate.get(i).getMovie_lensID());
 
 						}
 					} catch (NoSuchUserException e) {
